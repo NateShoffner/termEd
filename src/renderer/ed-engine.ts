@@ -194,6 +194,18 @@ export class EdEngine {
     const now = Date.now();
     if (now - this.lastReactionAt < this.reactionCooldown) return;
 
+    const specific = this.quotes.commandSpecific.find((entry) =>
+      entry.pattern.test(command)
+    );
+
+    // Easter eggs land even when the shell rejects the command
+    // (typing "ed" errors in most shells, but Ed still answers).
+    if (specific?.beforeFailure) {
+      this.lastReactionAt = now;
+      this.speak(this.pickFrom(specific.lines), { force: true });
+      return;
+    }
+
     const looksLikeFailure =
       /\b(error|exception|failed|failure|fatal|denied|not recognized|command not found|cannot find|no such file)\b/i.test(
         output
@@ -205,12 +217,15 @@ export class EdEngine {
       return;
     }
 
-    const specific = this.quotes.commandSpecific.find((entry) =>
-      entry.pattern.test(command)
-    );
     if (specific) {
       this.lastReactionAt = now;
       this.speak(this.pickFrom(specific.lines), { force: true });
+      return;
+    }
+
+    if (/\bwarn(ing)?s?\b/i.test(output)) {
+      this.lastReactionAt = now;
+      this.speak(this.pick('warnings'), { force: true });
       return;
     }
 

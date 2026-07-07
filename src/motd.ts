@@ -16,12 +16,33 @@ const QUOTES = [
   'The job queue is empty and the day is yours.',
   'CHAIN yourself to greatness. SETLL on success. READE every opportunity.',
   'Somewhere a subfile is loading perfectly. That kind of day.',
+  'Signed on and locked in.',
+  'You are the PTF this system has been waiting for.',
+  'Great sessions are not found, they are compiled.',
+  'The prompt is blank. The potential is not.',
+  'Write code the 5250 would be proud to display.',
+  'Today runs at priority 1.',
+  'Message queue clear. Conscience clear. Go.',
+  'Somewhere out there, a mainframe believes in you too.',
+  'A hero is just a developer who read the error message.',
+  'Ship something worth a splash page.',
+  'The library list is set. The rest is up to you.',
+  'Batch it, interactive it, just make it happen.',
+  'Wings not included. Red Bull sold separately.',
+  'Fueled by taurine, powered by belief.',
+  'One Red Bull in, all indicators on.',
+  'Smoke break scheduled. Greatness is not. Greatness is continuous.',
 ];
 
 const DAY_LINES: Partial<Record<number, string[]>> = {
+  0: [
+    'Sunday session? Legends rest by shipping slower, not stopping.',
+    'Sunday. Even the batch window takes it easy today. Code for joy.',
+  ],
   1: [
     'Monday. Fresh batch queue, fresh you.',
     'New week. The spool file of possibility is empty and waiting.',
+    'Monday IPL complete. All subsystems of greatness online.',
   ],
   2: [
     'New comic book day is TOMORROW. Prepare the pull list.',
@@ -31,9 +52,17 @@ const DAY_LINES: Partial<Record<number, string[]>> = {
     "IT'S NEW COMIC BOOK DAY. Finish strong, then get to the shop.",
     'Wednesday. You know what that means. NCBD.',
   ],
+  4: [
+    'Thursday: read your new comics yet? Work first. Or not. I support you either way.',
+    'Thursday. The week is compiling. Almost linked.',
+  ],
   5: [
     'Friday deploy? I believe in you. I believe in everything about you.',
     'Friday. Ship it or shelve it, either way you crushed this week.',
+  ],
+  6: [
+    'Saturday code hits different. No meetings, all momentum.',
+    'Weekend session! This one goes in the longbox of great decisions.',
   ],
 };
 

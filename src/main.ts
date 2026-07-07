@@ -104,10 +104,21 @@ function createWindow(): void {
   });
 
   // Dev helper: TERMED_SHOT=<file.png> captures a screenshot ~5s after load
-  // and exits. Used to eyeball styling changes without a manual launch.
+  // and exits. TERMED_TYPE=<text> types the text (plus Enter) first, through
+  // the real input path, so Ed's reactions can be exercised.
   if (process.env.TERMED_SHOT) {
     win.webContents.once('did-finish-load', async () => {
-      await new Promise((r) => setTimeout(r, 5000));
+      if (process.env.TERMED_TYPE) {
+        await new Promise((r) => setTimeout(r, 6000));
+        win.focus();
+        for (const ch of process.env.TERMED_TYPE) {
+          win.webContents.sendInputEvent({ type: 'char', keyCode: ch });
+        }
+        win.webContents.sendInputEvent({ type: 'char', keyCode: '\r' });
+        await new Promise((r) => setTimeout(r, 6500));
+      } else {
+        await new Promise((r) => setTimeout(r, 5000));
+      }
       try {
         fs.writeFileSync(
           process.env.TERMED_SHOT as string,
