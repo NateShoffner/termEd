@@ -72,10 +72,15 @@ export class EdEngine {
     this.scheduleIntervalRemark();
 
     setTimeout(() => {
-      // On Tuesday/Wednesday, Ed sometimes leads with new comic book day.
-      const day = new Date().getDay();
-      const useNcbd = (day === 2 || day === 3) && Math.random() < 0.5;
-      this.speak(useNcbd ? this.pickNcbd() : this.pick('greetings'), { force: true });
+      // NCBD leads on Tuesday/Wednesday; mornings usually get the catchphrase.
+      const now = new Date();
+      const useNcbd = (now.getDay() === 2 || now.getDay() === 3) && Math.random() < 0.5;
+      const isMorning = now.getHours() >= 5 && now.getHours() < 12;
+      let line: string;
+      if (useNcbd) line = this.pickNcbd();
+      else if (isMorning && Math.random() < 0.7) line = this.pick('morningGreetings');
+      else line = this.pick('greetings');
+      this.speak(line, { force: true });
     }, 900);
   }
 

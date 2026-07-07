@@ -12,6 +12,7 @@ export interface NcbdQuotes {
 
 export interface EdQuotes {
   greetings: string[];
+  morningGreetings: string[];
   hype: string[];
   encouragement: string[];
   rpgFacts: string[];
@@ -37,7 +38,17 @@ export const ED_QUOTES: EdQuotes = {
     "Session started! You know, the AS/400 has been up since 1988. Be like the AS/400 today.",
   ],
 
+  morningGreetings: [
+    "GET UP AND GET DOWN!!! Good morning, superstar.",
+    "Morning! Get up and get down!!! Coffee in one hand, keyboard in the other.",
+    "Rise and shine! Get up and get down!!! The compiler awaits.",
+    "It's morning and you know what that means. GET UP AND GET DOWN!!!",
+    "Get up and get down!!! Early session? That's champion behavior.",
+    "GET UP AND GET DOWN!!! The batch jobs finished overnight and so did your excuses.",
+  ],
+
   hype: [
+    "Get up and get down!!! That command? Down. You? Up.",
     "LOOK at you shipping! That ran cleaner than a fixed-format spec sheet.",
     "That's what I'm TALKING about. Column 6? C-spec? No - that was a YOU-spec.",
     "Smooth. SMOOTH. IBM should study your workflow honestly.",

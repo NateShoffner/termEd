@@ -47,9 +47,14 @@ export function getMotd(version: string): MotdLine[] {
     { text: `"${pick(QUOTES)}" - Ed`, color: 'DarkGray' },
   ];
 
-  const dayPool = DAY_LINES[new Date().getDay()];
+  const now = new Date();
+  const dayPool = DAY_LINES[now.getDay()];
   if (dayPool) {
     lines.push({ text: pick(dayPool), color: 'Yellow' });
+  }
+
+  if (now.getHours() >= 5 && now.getHours() < 12) {
+    lines.push({ text: 'GET UP AND GET DOWN!!!', color: 'Yellow' });
   }
 
   return lines;
