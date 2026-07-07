@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;" />
+  <title>termEd</title>
+  <link rel="stylesheet" href="./renderer.css" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div id="ed-backdrop"></div>
+  <div id="ed-scrim"></div>
+  <div id="terminal"></div>
+
+  <div id="ed-bubble" class="hidden">
+    <img id="ed-avatar" src="../../assets/ed-1.png" alt="Ed" />
+    <div id="ed-bubble-content">
+      <div id="ed-bubble-name">Ed</div>
+      <div id="ed-bubble-text"></div>
+    </div>
+  </div>
+
+  <script src="./renderer.js"></script>
+</body>
+</html>

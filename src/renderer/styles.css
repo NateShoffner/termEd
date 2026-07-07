@@ -1,0 +1,119 @@
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #0a0a0f;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+/* Ed backdrop */
+#ed-backdrop {
+  position: fixed;
+  inset: 0;
+  background-image: url('../../assets/ed-1.png');
+  background-size: cover;
+  background-position: center 25%;
+  opacity: 0.2;
+  transition: opacity 1.2s ease;
+  z-index: 0;
+}
+
+/* Ed leans in when he has something to say */
+body.ed-speaking #ed-backdrop {
+  opacity: 0.38;
+}
+
+#ed-scrim {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(10, 10, 15, 0.55) 0%,
+    rgba(10, 10, 15, 0.78) 100%
+  );
+  z-index: 1;
+}
+
+#terminal {
+  position: fixed;
+  inset: 0;
+  padding: 12px 8px 12px 12px;
+  z-index: 2;
+}
+
+.xterm .xterm-viewport {
+  background-color: transparent !important;
+}
+
+/* Subtle scrollbar: invisible track, thumb only appears when there's
+   scrollback (xterm keeps the viewport at overflow-y: scroll, which
+   otherwise shows a permanent gray gutter). */
+.xterm .xterm-viewport::-webkit-scrollbar {
+  width: 8px;
+}
+
+.xterm .xterm-viewport::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.xterm .xterm-viewport::-webkit-scrollbar-thumb {
+  background: rgba(111, 195, 255, 0.2);
+  border-radius: 4px;
+}
+
+.xterm .xterm-viewport::-webkit-scrollbar-thumb:hover {
+  background: rgba(111, 195, 255, 0.45);
+}
+
+/* Speech bubble */
+#ed-bubble {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  max-width: 420px;
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 14px 16px;
+  background: rgba(22, 24, 38, 0.92);
+  border: 1px solid rgba(120, 200, 255, 0.35);
+  border-radius: 16px 16px 4px 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55), 0 0 24px rgba(90, 170, 255, 0.12);
+  z-index: 10;
+  cursor: pointer;
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+#ed-bubble.hidden {
+  opacity: 0;
+  transform: translateY(16px);
+  pointer-events: none;
+}
+
+#ed-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid rgba(120, 200, 255, 0.5);
+  background: #1a1c2e;
+  flex-shrink: 0;
+}
+
+#ed-bubble-name {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6fc3ff;
+  margin-bottom: 4px;
+}
+
+#ed-bubble-text {
+  font-size: 14px;
+  line-height: 1.45;
+  color: #eef2ff;
+}

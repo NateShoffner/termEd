@@ -1,0 +1,80 @@
+{
+  "name": "termed",
+  "version": "1.0.0",
+  "description": "termEd - the terminal that believes in you. A parody terminal emulator powered by Ed's relentless positivity and IBM RPG wisdom.",
+  "main": "out/main.js",
+  "scripts": {
+    "start": "npm run build && electron .",
+    "build": "node scripts/build.mjs",
+    "check": "tsc --noEmit",
+    "pack": "npm run build && electron-builder --dir",
+    "dist": "npm run build && electron-builder --publish=never"
+  },
+  "keywords": [
+    "terminal",
+    "ed",
+    "hype",
+    "rpg",
+    "ibm-i",
+    "parody"
+  ],
+  "author": "Nate Shoffner",
+  "license": "MIT",
+  "dependencies": {
+    "@lydell/node-pty": "^1.2.0-beta.12"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.0",
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/addon-web-links": "^0.12.0",
+    "@xterm/addon-webgl": "^0.19.0",
+    "@xterm/xterm": "^6.0.0",
+    "electron": "^43.0.0",
+    "electron-builder": "^26.0.0",
+    "esbuild": "^0.28.1",
+    "typescript": "^6.0.3"
+  },
+  "build": {
+    "appId": "dev.nateshoffner.termed",
+    "productName": "termEd",
+    "directories": {
+      "buildResources": "build",
+      "output": "dist"
+    },
+    "files": [
+      "out/**/*",
+      "assets/ed-*.png",
+      "assets/icon.png",
+      "assets/icon.ico"
+    ],
+    "asarUnpack": [
+      "node_modules/@lydell/**"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "deleteAppDataOnUninstall": true
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "icon": "build/icon.png",
+      "category": "public.app-category.developer-tools"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "icon": "build/icon.png",
+      "category": "Utility"
+    }
+  }
+}
