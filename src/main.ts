@@ -135,6 +135,11 @@ function createWindow(): void {
 app.setAppUserModelId('dev.nateshoffner.termed');
 
 app.whenReady().then(() => {
+  // macOS ignores the BrowserWindow icon option; packaged builds use the
+  // bundle's icns, but dev (npm start) needs the dock icon set directly.
+  if (process.platform === 'darwin') {
+    app.dock?.setIcon(path.join(__dirname, '..', 'assets', 'icon.png'));
+  }
   createWindow();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
