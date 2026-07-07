@@ -66,7 +66,10 @@ for (const photo of ED_PHOTOS) {
   img.decode().catch(() => {});
 }
 
-const ed = new EdEngine(ED_QUOTES, { photos: ED_PHOTOS });
+const ed = new EdEngine(ED_QUOTES, {
+  photos: ED_PHOTOS,
+  platform: window.termed.platform,
+});
 
 // Wire terminal to pty
 window.termed.onData((data) => {

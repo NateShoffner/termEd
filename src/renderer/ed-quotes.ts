@@ -3,6 +3,8 @@ export interface CommandReaction {
   lines: string[];
   // Easter eggs react even when the shell errors on the command.
   beforeFailure?: boolean;
+  // Restrict a reaction to Windows or unix-likes (omit for everywhere).
+  platform?: 'win32' | 'unix';
 }
 
 export interface NcbdQuotes {
@@ -225,10 +227,21 @@ export const ED_QUOTES: EdQuotes = {
     {
       pattern: /^ed\s*$/i,
       beforeFailure: true,
+      platform: 'win32',
       lines: [
         "You rang? I never left. I will NEVER leave.",
         "That's me! Also a line editor from 1969, but mostly me.",
         "Summoned! Fun fact: ed is the standard text editor. I am the standard hype man.",
+      ],
+    },
+    {
+      pattern: /^ed(\s|$)/i,
+      beforeFailure: true,
+      platform: 'unix',
+      lines: [
+        "You just opened the REAL ed, the 1969 editor. No prompt, no mercy. Type q and press Enter to come home.",
+        "That's actual ed! Flattered, but you're in a no-prompt editor right now. q then Enter escapes. (If you typed text: a lone . first, then q.)",
+        "Careful, that summoned the original ed editor, not me. q + Enter gets you out. I'll be right here.",
       ],
     },
     {

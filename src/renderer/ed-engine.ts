@@ -1,4 +1,4 @@
-import type { EdQuotes, QuoteCategory } from './ed-quotes';
+import type { CommandReaction, EdQuotes, QuoteCategory } from './ed-quotes';
 
 export interface EdEngineOptions {
   globalCooldown?: number;
@@ -10,6 +10,7 @@ export interface EdEngineOptions {
   outputSettleMs?: number;
   outputMaxWaitMs?: number;
   photos?: string[];
+  platform?: string;
 }
 
 type Timer = ReturnType<typeof setTimeout>;
@@ -38,6 +39,7 @@ export class EdEngine {
   private backdrop: HTMLElement;
   private avatar: HTMLImageElement;
   private photos: string[];
+  private platform = 'win32';
   private hideTimer: Timer | null = null;
 
   private lineBuffer = '';
@@ -67,6 +69,7 @@ export class EdEngine {
 
     this.photos = options.photos ?? [];
     if (this.photos.length) this.setPhoto(this.pickFrom(this.photos));
+    this.platform = options.platform ?? 'win32';
 
     this.resetIdleTimer();
     this.scheduleIntervalRemark();
@@ -173,7 +176,28 @@ export class EdEngine {
     this.settleTimer = setTimeout(() => this.reactToCommand(), this.outputSettleMs);
   }
 
+  private findReaction(command: string): CommandReaction | undefined {
+    const isWindows = this.platform === 'win32';
+    return this.quotes.commandSpecific.find(
+      (entry) =>
+        entry.pattern.test(command) &&
+        (!entry.platform || (entry.platform === 'win32') === isWindows)
+    );
+  }
+
   private onCommandEntered(command: string): void {
+    // Easter eggs react instantly, without waiting for output - some of their
+    // triggers produce none (real ed on unix opens silently).
+    const egg = this.findReaction(command);
+    if (egg?.beforeFailure) {
+      const now = Date.now();
+      if (now - this.lastReactionAt >= this.reactionCooldown) {
+        this.lastReactionAt = now;
+        this.speak(this.pickFrom(egg.lines), { force: true });
+      }
+      return;
+    }
+
     this.pendingCommand = command;
     this.outputWindow = '';
     if (this.settleTimer) clearTimeout(this.settleTimer);
@@ -194,17 +218,7 @@ export class EdEngine {
     const now = Date.now();
     if (now - this.lastReactionAt < this.reactionCooldown) return;
 
-    const specific = this.quotes.commandSpecific.find((entry) =>
-      entry.pattern.test(command)
-    );
-
-    // Easter eggs land even when the shell rejects the command
-    // (typing "ed" errors in most shells, but Ed still answers).
-    if (specific?.beforeFailure) {
-      this.lastReactionAt = now;
-      this.speak(this.pickFrom(specific.lines), { force: true });
-      return;
-    }
+    const specific = this.findReaction(command);
 
     const looksLikeFailure =
       /\b(error|exception|failed|failure|fatal|denied|not recognized|command not found|cannot find|no such file)\b/i.test(

@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
 const termedApi = {
+  platform: process.platform,
   onData: (callback: (data: string) => void): void => {
     ipcRenderer.on('pty:data', (_event, data: string) => callback(data));
   },
