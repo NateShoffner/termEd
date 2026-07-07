@@ -11,6 +11,7 @@ It started with a screenshot: a terminal with just enough transparency to reveal
 - **It's a real terminal.** termEd wraps your actual shell (PowerShell/pwsh on Windows, `$SHELL` elsewhere) via a pseudo-terminal. Run anything you'd normally run.
 - **Ed is always there.** His portrait sits behind your session at a respectful opacity. When he speaks, he leans in.
 - **Ed hypes you up:**
+  - **Dynamic MOTD** - every session opens with a random Ed proverb, plus day-specific lines (Friday deploys, Monday resets, NCBD)
   - **Startup greeting** - a warm welcome the moment you open a session
   - **Command reactions** - pushes get celebrated, errors get encouragement ("RPG IV didn't compile first try either"), `rm` gets supportive caution
   - **Ambient wisdom** - every few minutes, an unsolicited motivational line, IBM RPG fact, or comics reference

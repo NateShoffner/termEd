@@ -4,6 +4,7 @@ import * as os from 'os';
 import * as fs from 'fs';
 import { execFileSync } from 'child_process';
 import * as pty from '@lydell/node-pty';
+import { getMotd } from './motd';
 
 function resolveShell(): string {
   if (process.env.TERMED_SHELL) return process.env.TERMED_SHELL;
@@ -43,14 +44,18 @@ function createWindow(): void {
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
 
   const shell = resolveShell();
-  // On PowerShell, print the banner via the shell itself - ConPTY repaints the
-  // whole viewport at startup, so anything written straight to xterm gets wiped.
+  // The MOTD prints via the shell itself - ConPTY repaints the whole viewport
+  // at startup, so anything written straight to xterm gets wiped.
+  const psQuote = (s: string) => `'${s.replace(/'/g, "''")}'`;
+  const motdCommand = [
+    "Write-Host ''",
+    ...getMotd(app.getVersion()).map(
+      (line) => `Write-Host ${psQuote('  ' + line.text)} -ForegroundColor ${line.color}`
+    ),
+    "Write-Host ''",
+  ].join('; ');
   const shellArgs = /powershell|pwsh/i.test(shell)
-    ? [
-        '-NoExit',
-        '-Command',
-        "Write-Host ''; Write-Host '  * termEd v1.0 - the terminal that believes in you' -ForegroundColor Cyan; Write-Host '  \"Your session is compiled and ready. Just like a clean RPG IV build.\" - Ed' -ForegroundColor DarkGray; Write-Host ''",
-      ]
+    ? ['-NoExit', '-Command', motdCommand]
     : [];
   const ptyProc = pty.spawn(shell, shellArgs, {
     name: 'xterm-256color',
