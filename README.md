@@ -4,6 +4,8 @@
 
 A fully functional terminal emulator built entirely around Ed - the most uplifting friend a developer could have, and an avid IBM RPG programmer who will absolutely find a way to bring that up.
 
+![termEd demo](assets/demo.gif)
+
 ## Features
 
 - **A real terminal.** Wraps your actual shell (PowerShell/pwsh on Windows, `$SHELL` elsewhere) via a pseudo-terminal.
