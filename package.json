@@ -55,10 +55,18 @@
         "nsis",
         "portable"
       ],
-      "icon": "build/icon.ico"
+      "icon": "build/icon.ico",
+      "extraResources": [
+        {
+          "from": "build/ed.cmd",
+          "to": "bin/ed.cmd"
+        }
+      ]
     },
     "nsis": {
-      "oneClick": true,
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "include": "build/installer.nsh",
       "deleteAppDataOnUninstall": true
     },
     "mac": {
