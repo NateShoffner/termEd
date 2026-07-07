@@ -5,6 +5,7 @@ import { WebLinksAddon } from '@xterm/addon-web-links';
 import '@xterm/xterm/css/xterm.css';
 import { ED_QUOTES } from './ed-quotes';
 import { EdEngine } from './ed-engine';
+import { runDemo } from './demo';
 
 const term = new Terminal({
   allowTransparency: true,
@@ -69,18 +70,27 @@ for (const photo of ED_PHOTOS) {
 const ed = new EdEngine(ED_QUOTES, {
   photos: ED_PHOTOS,
   platform: window.termed.platform,
+  // Demo pacing: reactions land close together, and the idle check-in fires
+  // shortly after the script ends (14s clears every mid-demo pause).
+  ...(window.termed.demo
+    ? { reactionCooldown: 2_500, globalCooldown: 4_000, idleThreshold: 14_000 }
+    : {}),
 });
 
-// Wire terminal to pty
-window.termed.onData((data) => {
-  term.write(data);
-  ed.onOutput(data);
-});
+if (window.termed.demo) {
+  void runDemo(term, ed);
+} else {
+  // Wire terminal to pty
+  window.termed.onData((data) => {
+    term.write(data);
+    ed.onOutput(data);
+  });
 
-term.onData((data) => {
-  window.termed.input(data);
-  ed.onKeystroke(data);
-});
+  term.onData((data) => {
+    window.termed.input(data);
+    ed.onKeystroke(data);
+  });
+}
 
 function syncSize(): void {
   fitAddon.fit();

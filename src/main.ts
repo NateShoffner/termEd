@@ -6,6 +6,11 @@ import { execFileSync } from 'child_process';
 import * as pty from '@lydell/node-pty';
 import { getMotd } from './motd';
 
+// Demo mode: scripted showcase session, no real shell. The env var makes the
+// flag visible to the preload/renderer, which run the actual script.
+if (process.argv.includes('--demo')) process.env.TERMED_DEMO = '1';
+const isDemo = process.env.TERMED_DEMO === '1';
+
 function resolveShell(): string {
   if (process.env.TERMED_SHELL) return process.env.TERMED_SHELL;
   if (process.platform === 'win32') {
@@ -43,6 +48,39 @@ function createWindow(): void {
   win.removeMenu();
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
 
+  if (!isDemo) attachShell(win);
+
+  // Dev helper: TERMED_SHOT=<file.png> captures a screenshot after load and
+  // exits (delay via TERMED_SHOT_DELAY, default 5000ms). TERMED_TYPE=<text>
+  // types the text (plus Enter) first, through the real input path.
+  if (process.env.TERMED_SHOT) {
+    win.webContents.once('did-finish-load', async () => {
+      if (process.env.TERMED_TYPE) {
+        await new Promise((r) => setTimeout(r, 6000));
+        win.focus();
+        for (const ch of process.env.TERMED_TYPE) {
+          win.webContents.sendInputEvent({ type: 'char', keyCode: ch });
+        }
+        win.webContents.sendInputEvent({ type: 'char', keyCode: '\r' });
+        await new Promise((r) => setTimeout(r, 6500));
+      } else {
+        const delay = Number(process.env.TERMED_SHOT_DELAY) || 5000;
+        await new Promise((r) => setTimeout(r, delay));
+      }
+      try {
+        fs.writeFileSync(
+          process.env.TERMED_SHOT as string,
+          (await win.webContents.capturePage()).toPNG()
+        );
+      } catch (e) {
+        console.error('TERMED_SHOT failed:', e);
+      }
+      app.exit(0);
+    });
+  }
+}
+
+function attachShell(win: BrowserWindow): void {
   const shell = resolveShell();
   // The MOTD prints via the shell itself - ConPTY repaints the whole viewport
   // at startup, so anything written straight to xterm gets wiped.
@@ -102,34 +140,6 @@ function createWindow(): void {
       ptyProc.kill();
     } catch {}
   });
-
-  // Dev helper: TERMED_SHOT=<file.png> captures a screenshot ~5s after load
-  // and exits. TERMED_TYPE=<text> types the text (plus Enter) first, through
-  // the real input path, so Ed's reactions can be exercised.
-  if (process.env.TERMED_SHOT) {
-    win.webContents.once('did-finish-load', async () => {
-      if (process.env.TERMED_TYPE) {
-        await new Promise((r) => setTimeout(r, 6000));
-        win.focus();
-        for (const ch of process.env.TERMED_TYPE) {
-          win.webContents.sendInputEvent({ type: 'char', keyCode: ch });
-        }
-        win.webContents.sendInputEvent({ type: 'char', keyCode: '\r' });
-        await new Promise((r) => setTimeout(r, 6500));
-      } else {
-        await new Promise((r) => setTimeout(r, 5000));
-      }
-      try {
-        fs.writeFileSync(
-          process.env.TERMED_SHOT as string,
-          (await win.webContents.capturePage()).toPNG()
-        );
-      } catch (e) {
-        console.error('TERMED_SHOT failed:', e);
-      }
-      app.exit(0);
-    });
-  }
 }
 
 app.setAppUserModelId('dev.nateshoffner.termed');

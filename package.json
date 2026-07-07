@@ -5,6 +5,7 @@
   "main": "out/main.js",
   "scripts": {
     "start": "npm run build && electron .",
+    "demo": "npm run build && electron . --demo",
     "build": "node scripts/build.mjs",
     "check": "tsc --noEmit",
     "pack": "npm run build && electron-builder --dir",
