@@ -8,11 +8,10 @@ body {
   font-family: 'Segoe UI', system-ui, sans-serif;
 }
 
-/* Ed backdrop */
+/* Ed backdrop; the image is set by EdEngine once decoded */
 #ed-backdrop {
   position: fixed;
   inset: 0;
-  background-image: url('../../assets/ed-1.png');
   background-size: cover;
   background-position: center 25%;
   opacity: 0.2;

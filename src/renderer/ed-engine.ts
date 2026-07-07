@@ -31,6 +31,7 @@ export class EdEngine {
 
   private lastSpokeAt = 0;
   private lastReactionAt = 0;
+  private hasSpoken = false;
   private idleFired = false;
   private recentByCategory = new Map<QuoteCategory, string[]>();
 
@@ -113,8 +114,17 @@ export class EdEngine {
   }
 
   setPhoto(photo: string): void {
-    this.backdrop.style.backgroundImage = `url("${photo}")`;
-    this.avatar.src = photo;
+    // Apply only once decoded, so the backdrop never flashes blank or
+    // pops in half-loaded.
+    const img = new Image();
+    img.src = photo;
+    img
+      .decode()
+      .catch(() => {})
+      .finally(() => {
+        this.backdrop.style.backgroundImage = `url("${photo}")`;
+        this.avatar.src = photo;
+      });
   }
 
   speak(text: string, { force = false } = {}): boolean {
@@ -122,8 +132,12 @@ export class EdEngine {
     if (!force && now - this.lastSpokeAt < this.globalCooldown) return false;
     this.lastSpokeAt = now;
 
-    // Ed strikes a new pose when he has something to say.
-    if (this.photos.length > 1) this.setPhoto(this.pickFrom(this.photos));
+    // Ed strikes a new pose when he has something to say - except the
+    // greeting, so the backdrop doesn't visibly swap right after startup.
+    if (this.hasSpoken && this.photos.length > 1) {
+      this.setPhoto(this.pickFrom(this.photos));
+    }
+    this.hasSpoken = true;
 
     this.bubbleText.textContent = text;
     this.bubble.classList.remove('hidden');
