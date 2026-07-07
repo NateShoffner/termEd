@@ -34,9 +34,11 @@ Electron + [xterm.js](https://xtermjs.org/) + [@lydell/node-pty](https://github.
 ```
 src/main.ts                pty spawn + window + IPC
 src/preload.ts             contextBridge (input/output/resize)
+src/motd.ts                dynamic startup banner
 src/renderer/renderer.ts   xterm setup + wiring
 src/renderer/ed-engine.ts  when Ed speaks
 src/renderer/ed-quotes.ts  what Ed says
+src/renderer/demo.ts       scripted demo session
 ```
 
-`npm run check` typechecks, `npm run build` bundles, `npm start` does both and launches.
+`npm run check` typechecks, `npm run build` bundles, `npm start` does both and launches. `npm run demo` plays a scripted session with no real shell.

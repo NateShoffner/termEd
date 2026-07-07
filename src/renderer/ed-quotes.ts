@@ -23,7 +23,6 @@ export interface EdQuotes {
   rpgFacts: string[];
   comics: string[];
   idleCheckins: string[];
-  farewellHints: string[];
   ncbd: NcbdQuotes;
   commandSpecific: CommandReaction[];
 }
@@ -184,10 +183,6 @@ export const ED_QUOTES: EdQuotes = {
     "Smoke break? Fair. I'll hold the prompt exactly where you left it.",
     "If you're up getting a Red Bull, grab two. One's for the code.",
     "Quiet, huh? I'm on my third Red Bull just watching. No pressure. Ever.",
-  ],
-
-  farewellHints: [
-    "Heading out? Great session. SIGNOFF *LIST - and the list says you did amazing.",
   ],
 
   // New Comic Book Day. It is Wednesday. Ed will not let you forget.
