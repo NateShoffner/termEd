@@ -8,15 +8,36 @@
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-  <div id="ed-backdrop"></div>
   <div id="ed-scrim"></div>
-  <div id="terminal"></div>
 
-  <div id="ed-bubble" class="hidden">
-    <img id="ed-avatar" src="../../assets/ed-1.png" alt="Ed" />
-    <div id="ed-bubble-content">
-      <div id="ed-bubble-name">Ed</div>
-      <div id="ed-bubble-text"></div>
+  <div id="ed-tabbar">
+    <div id="ed-tablist" role="tablist"></div>
+    <div id="ed-tabbar-actions">
+      <button id="ed-new-tab" type="button" title="New tab (Ctrl+T)" aria-label="New tab">+</button>
+      <button id="ed-about-btn" type="button" title="About termEd" aria-label="About termEd">i</button>
+    </div>
+  </div>
+  <!-- Each tab gets its own backdrop + bubble + terminal, appended here at
+       runtime (see tab-manager.ts createSession) so Ed's wallpaper and
+       popups are independent per tab. -->
+  <div id="terminal-panes"></div>
+
+  <div id="ed-about" class="hidden">
+    <div id="ed-about-panel">
+      <button id="ed-about-close" type="button" aria-label="Close">×</button>
+      <img id="ed-about-icon" src="../../assets/icon.png" alt="" />
+      <h1 id="ed-about-name">termEd</h1>
+      <p id="ed-about-tagline">The terminal that believes in you.</p>
+      <dl id="ed-about-meta">
+        <dt>Version</dt>
+        <dd id="ed-about-version"></dd>
+        <dt>Commit</dt>
+        <dd id="ed-about-commit"></dd>
+      </dl>
+      <p id="ed-about-credits">
+        Made by Nate Shoffner ·
+        <a id="ed-about-link" href="https://nateshoffner.com">nateshoffner.com</a>
+      </p>
     </div>
   </div>
 

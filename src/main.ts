@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import * as path from 'path';
 import * as os from 'os';
 import * as fs from 'fs';
@@ -48,7 +48,7 @@ function createWindow(): void {
   win.removeMenu();
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
 
-  if (!isDemo) attachShell(win);
+  if (!isDemo) attachTabs(win);
 
   // Dev helper: TERMED_SHOT=<file.png> captures a screenshot after load and
   // exits (delay via TERMED_SHOT_DELAY, default 5000ms). TERMED_TYPE=<text>
@@ -80,22 +80,20 @@ function createWindow(): void {
   }
 }
 
-function attachShell(win: BrowserWindow): void {
-  const shell = resolveShell();
+function spawnTabPty(win: BrowserWindow, tabId: string): pty.IPty {
+  const shellPath = resolveShell();
   // The MOTD prints via the shell itself - ConPTY repaints the whole viewport
   // at startup, so anything written straight to xterm gets wiped.
   const psQuote = (s: string) => `'${s.replace(/'/g, "''")}'`;
   const motdCommand = [
     "Write-Host ''",
-    ...getMotd(app.getVersion()).map(
+    ...getMotd(__APP_VERSION__).map(
       (line) => `Write-Host ${psQuote('  ' + line.text)} -ForegroundColor ${line.color}`
     ),
     "Write-Host ''",
   ].join('; ');
-  const shellArgs = /powershell|pwsh/i.test(shell)
-    ? ['-NoExit', '-Command', motdCommand]
-    : [];
-  const ptyProc = pty.spawn(shell, shellArgs, {
+  const shellArgs = /powershell|pwsh/i.test(shellPath) ? ['-NoExit', '-Command', motdCommand] : [];
+  const ptyProc = pty.spawn(shellPath, shellArgs, {
     name: 'xterm-256color',
     cols: 80,
     rows: 24,
@@ -116,33 +114,79 @@ function attachShell(win: BrowserWindow): void {
         flushTimer = null;
         const chunk = ptyBuffer;
         ptyBuffer = '';
-        if (!win.isDestroyed()) win.webContents.send('pty:data', chunk);
+        if (!win.isDestroyed()) win.webContents.send('pty:data', tabId, chunk);
       }, 4);
     }
   });
 
   ptyProc.onExit(() => {
-    if (!win.isDestroyed()) win.close();
+    if (!win.isDestroyed()) win.webContents.send('pty:exit', tabId);
   });
 
-  ipcMain.on('pty:input', (event, data: string) => {
-    if (event.sender === win.webContents) ptyProc.write(data);
-  });
+  return ptyProc;
+}
 
-  ipcMain.on('pty:resize', (event, { cols, rows }: { cols: number; rows: number }) => {
+// One pty per tab, keyed by an id the renderer mints per xterm instance.
+function attachTabs(win: BrowserWindow): void {
+  const ptys = new Map<string, pty.IPty>();
+  let nextId = 1;
+
+  const onCreate = (event: Electron.IpcMainInvokeEvent): string | null => {
+    if (event.sender !== win.webContents) return null;
+    const tabId = String(nextId++);
+    ptys.set(tabId, spawnTabPty(win, tabId));
+    return tabId;
+  };
+
+  const onClose = (event: Electron.IpcMainEvent, tabId: string): void => {
+    if (event.sender !== win.webContents) return;
+    ptys.get(tabId)?.kill();
+    ptys.delete(tabId);
+  };
+
+  const onInput = (event: Electron.IpcMainEvent, tabId: string, data: string): void => {
+    if (event.sender === win.webContents) ptys.get(tabId)?.write(data);
+  };
+
+  const onResize = (
+    event: Electron.IpcMainEvent,
+    tabId: string,
+    cols: number,
+    rows: number
+  ): void => {
     if (event.sender === win.webContents && cols > 0 && rows > 0) {
-      ptyProc.resize(cols, rows);
+      ptys.get(tabId)?.resize(cols, rows);
     }
-  });
+  };
+
+  ipcMain.handle('tab:create', onCreate);
+  ipcMain.on('tab:close', onClose);
+  ipcMain.on('pty:input', onInput);
+  ipcMain.on('pty:resize', onResize);
 
   win.on('closed', () => {
-    try {
-      ptyProc.kill();
-    } catch {}
+    for (const ptyProc of ptys.values()) {
+      try {
+        ptyProc.kill();
+      } catch {}
+    }
+    ptys.clear();
+    ipcMain.removeHandler('tab:create');
+    ipcMain.off('tab:close', onClose);
+    ipcMain.off('pty:input', onInput);
+    ipcMain.off('pty:resize', onResize);
   });
 }
 
 app.setAppUserModelId('dev.nateshoffner.termed');
+
+// Fixed allowlist, not arbitrary renderer-controlled navigation - this is
+// only ever called with the credits-panel link.
+const ALLOWED_EXTERNAL_URLS = new Set(['https://nateshoffner.com']);
+
+ipcMain.on('app:open-external', (_event, url: string) => {
+  if (ALLOWED_EXTERNAL_URLS.has(url)) shell.openExternal(url);
+});
 
 app.whenReady().then(() => {
   // macOS ignores the BrowserWindow icon option; packaged builds use the

@@ -6,21 +6,53 @@ body {
   overflow: hidden;
   background: #0a0a0f;
   font-family: 'Segoe UI', system-ui, sans-serif;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
-/* Ed backdrop; the image is set by EdEngine once decoded */
-#ed-backdrop {
+img {
+  -webkit-user-drag: none;
+}
+
+/* The terminal is the one place selection is core functionality (copying
+   command output) - xterm renders its own selection layer regardless, but
+   this keeps native text selection available on the underlying DOM too. */
+.xterm,
+.xterm * {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+/* One .tab-session per open tab: its own backdrop + bubble + terminal.
+   Only the active tab's session is shown. */
+.tab-session {
+  position: fixed;
+  inset: 0;
+  display: none;
+}
+
+.tab-session.active {
+  display: block;
+}
+
+/* Ed's wallpaper for this tab; the image is set by EdEngine once decoded.
+   Blurred uniformly across the whole photo (rather than just behind the
+   terminal panel) so there's no sharp-vs-blurred seam anywhere on screen. */
+.ed-backdrop {
   position: fixed;
   inset: 0;
   background-size: cover;
   background-position: center 25%;
   opacity: 0.2;
+  filter: blur(2px);
+  transform: scale(1.05);
   transition: opacity 1.2s ease;
   z-index: 0;
+  pointer-events: none;
 }
 
 /* Ed leans in when he has something to say */
-body.ed-speaking #ed-backdrop {
+.tab-session.ed-speaking .ed-backdrop {
   opacity: 0.38;
 }
 
@@ -29,17 +61,155 @@ body.ed-speaking #ed-backdrop {
   inset: 0;
   background: radial-gradient(
     ellipse at center,
-    rgba(10, 10, 15, 0.55) 0%,
-    rgba(10, 10, 15, 0.78) 100%
+    rgba(10, 10, 15, 0.3) 0%,
+    rgba(10, 10, 15, 0.55) 100%
   );
   z-index: 1;
+  pointer-events: none;
 }
 
-#terminal {
+/* Tab bar - Ghostty-style flush tabs: active tab is brighter, sits flush
+   against the content below it (no border seam), inactive tabs recede. */
+#ed-tabbar {
   position: fixed;
-  inset: 0;
-  padding: 12px 8px 12px 12px;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 38px;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 5px 8px 0;
+  background: rgba(8, 8, 14, 0.65);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  z-index: 5;
+}
+
+#ed-tablist {
+  display: flex;
+  align-items: flex-end;
+  height: 33px;
+  flex: 1;
+  min-width: 0;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+#ed-tablist::-webkit-scrollbar {
+  display: none;
+}
+
+.ed-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1 1 150px;
+  max-width: 220px;
+  min-width: 80px;
+  height: 100%;
+  padding: 0 10px;
+  border: none;
+  border-radius: 7px 7px 0 0;
+  background: rgba(255, 255, 255, 0.03);
+  color: #9aa3c0;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.ed-tab:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: #cfe6ff;
+}
+
+.ed-tab.active {
+  background: rgba(24, 26, 40, 0.95);
+  color: #eef2ff;
+  box-shadow: inset 0 2px 0 #6fc3ff;
+}
+
+.ed-tab-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ed-tab-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+.ed-tab:hover .ed-tab-close,
+.ed-tab.active .ed-tab-close {
+  opacity: 0.55;
+}
+
+.ed-tab-close:hover {
+  background: rgba(255, 107, 122, 0.3);
+  opacity: 1 !important;
+}
+
+#ed-tabbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-bottom: 4px;
+}
+
+#ed-new-tab,
+#ed-about-btn {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #9aa3c0;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+#ed-about-btn {
+  font-style: italic;
+  font-family: Georgia, serif;
+}
+
+#ed-new-tab:hover,
+#ed-about-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #eef2ff;
+}
+
+.terminal-pane {
+  position: absolute;
+  /* Sessions span the full viewport (so the backdrop bleeds behind the tab
+     bar); this offsets the actual xterm mount below it. */
+  inset: 52px 8px 12px 12px;
   z-index: 2;
+  /* A flat tint behind the text so it reads clearly everywhere. The backdrop
+     itself is blurred (see .ed-backdrop) so there's no sharp detail here to
+     create a seam at the panel edge. */
+  background: rgba(9, 10, 16, 0.45);
+  border: 1px solid rgba(120, 200, 255, 0.1);
+  border-radius: 10px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
 }
 
 .xterm .xterm-viewport {
@@ -67,7 +237,7 @@ body.ed-speaking #ed-backdrop {
 }
 
 /* Speech bubble */
-#ed-bubble {
+.ed-bubble {
   position: fixed;
   right: 24px;
   bottom: 24px;
@@ -89,13 +259,13 @@ body.ed-speaking #ed-backdrop {
   transition: opacity 0.35s ease, transform 0.35s ease;
 }
 
-#ed-bubble.hidden {
+.ed-bubble.hidden {
   opacity: 0;
   transform: translateY(16px);
   pointer-events: none;
 }
 
-#ed-avatar {
+.ed-avatar {
   width: 48px;
   height: 48px;
   border-radius: 50%;
@@ -104,7 +274,7 @@ body.ed-speaking #ed-backdrop {
   flex-shrink: 0;
 }
 
-#ed-bubble-name {
+.ed-bubble-name {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -113,8 +283,120 @@ body.ed-speaking #ed-backdrop {
   margin-bottom: 4px;
 }
 
-#ed-bubble-text {
+.ed-bubble-text {
   font-size: 14px;
   line-height: 1.45;
   color: #eef2ff;
+}
+
+/* About overlay */
+#ed-about {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(6, 6, 12, 0.55);
+  opacity: 1;
+  transition: opacity 0.2s ease;
+}
+
+#ed-about.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#ed-about-panel {
+  position: relative;
+  width: 320px;
+  max-width: calc(100vw - 48px);
+  padding: 28px 24px 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  background: rgba(22, 24, 38, 0.85);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid rgba(120, 200, 255, 0.3);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55), 0 0 32px rgba(90, 170, 255, 0.12);
+  color: #eef2ff;
+}
+
+#ed-about-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #9aa3c0;
+  font: inherit;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+#ed-about-close:hover {
+  background: rgba(120, 200, 255, 0.12);
+  color: #eef2ff;
+}
+
+#ed-about-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  margin-bottom: 4px;
+}
+
+#ed-about-name {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+#ed-about-tagline {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: #9aa3c0;
+}
+
+#ed-about-meta {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 2px 10px;
+  margin: 0 0 14px;
+  font-size: 12px;
+}
+
+#ed-about-meta dt {
+  color: #6fc3ff;
+  text-align: right;
+  font-weight: 600;
+}
+
+#ed-about-meta dd {
+  margin: 0;
+  text-align: left;
+  font-family: 'Cascadia Mono', Consolas, 'Courier New', monospace;
+  color: #eef2ff;
+}
+
+#ed-about-credits {
+  margin: 0;
+  font-size: 12px;
+  color: #9aa3c0;
+}
+
+#ed-about-credits a {
+  color: #6fc3ff;
+  text-decoration: none;
+}
+
+#ed-about-credits a:hover {
+  text-decoration: underline;
 }

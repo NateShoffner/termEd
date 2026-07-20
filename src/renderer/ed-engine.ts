@@ -17,6 +17,8 @@ type Timer = ReturnType<typeof setTimeout>;
 
 // Ed's brain. Decides when he speaks and what he says.
 // All remarks render in the overlay bubble - never into the pty stream.
+// One instance per tab: each tab gets its own wallpaper pose, cooldowns, and
+// popups, scoped to the DOM subtree passed in as `container`.
 export class EdEngine {
   private quotes: EdQuotes;
 
@@ -35,6 +37,7 @@ export class EdEngine {
   private idleFired = false;
   private recentByCategory = new Map<QuoteCategory, string[]>();
 
+  private container: HTMLElement;
   private bubble: HTMLElement;
   private bubbleText: HTMLElement;
   private backdrop: HTMLElement;
@@ -49,8 +52,11 @@ export class EdEngine {
   private settleTimer: Timer | null = null;
   private maxWaitTimer: Timer | null = null;
   private idleTimer: Timer | null = null;
+  private intervalTimer: Timer | null = null;
+  private greetingTimer: Timer | null = null;
 
-  constructor(quotes: EdQuotes, options: EdEngineOptions = {}) {
+  constructor(container: HTMLElement, quotes: EdQuotes, options: EdEngineOptions = {}) {
+    this.container = container;
     this.quotes = quotes;
 
     this.globalCooldown = options.globalCooldown ?? 45_000;
@@ -62,10 +68,10 @@ export class EdEngine {
     this.outputSettleMs = options.outputSettleMs ?? 700;
     this.outputMaxWaitMs = options.outputMaxWaitMs ?? 8_000;
 
-    this.bubble = document.getElementById('ed-bubble')!;
-    this.bubbleText = document.getElementById('ed-bubble-text')!;
-    this.backdrop = document.getElementById('ed-backdrop')!;
-    this.avatar = document.getElementById('ed-avatar') as HTMLImageElement;
+    this.bubble = container.querySelector('.ed-bubble')!;
+    this.bubbleText = container.querySelector('.ed-bubble-text')!;
+    this.backdrop = container.querySelector('.ed-backdrop')!;
+    this.avatar = container.querySelector('.ed-avatar') as HTMLImageElement;
     this.bubble.addEventListener('click', () => this.hideBubble());
 
     this.photos = options.photos ?? [];
@@ -75,7 +81,7 @@ export class EdEngine {
     this.resetIdleTimer();
     this.scheduleIntervalRemark();
 
-    setTimeout(() => {
+    this.greetingTimer = setTimeout(() => {
       // NCBD leads on Tuesday/Wednesday; mornings usually get the catchphrase.
       const now = new Date();
       const useNcbd = (now.getDay() === 2 || now.getDay() === 3) && Math.random() < 0.5;
@@ -141,7 +147,7 @@ export class EdEngine {
 
     this.bubbleText.textContent = text;
     this.bubble.classList.remove('hidden');
-    document.body.classList.add('ed-speaking');
+    this.container.classList.add('ed-speaking');
 
     if (this.hideTimer) clearTimeout(this.hideTimer);
     const duration = Math.min(12_000, 5_000 + text.length * 40);
@@ -151,7 +157,7 @@ export class EdEngine {
 
   hideBubble(): void {
     this.bubble.classList.add('hidden');
-    document.body.classList.remove('ed-speaking');
+    this.container.classList.remove('ed-speaking');
     if (this.hideTimer) clearTimeout(this.hideTimer);
   }
 
@@ -188,6 +194,17 @@ export class EdEngine {
     }
     if (this.settleTimer) clearTimeout(this.settleTimer);
     this.settleTimer = setTimeout(() => this.reactToCommand(), this.outputSettleMs);
+  }
+
+  // Stops every pending timer - call when the tab this engine belongs to
+  // closes, so it doesn't keep scheduling remarks against detached DOM.
+  destroy(): void {
+    if (this.hideTimer) clearTimeout(this.hideTimer);
+    if (this.settleTimer) clearTimeout(this.settleTimer);
+    if (this.maxWaitTimer) clearTimeout(this.maxWaitTimer);
+    if (this.idleTimer) clearTimeout(this.idleTimer);
+    if (this.intervalTimer) clearTimeout(this.intervalTimer);
+    if (this.greetingTimer) clearTimeout(this.greetingTimer);
   }
 
   private findReaction(command: string): CommandReaction | undefined {
@@ -265,7 +282,7 @@ export class EdEngine {
   private scheduleIntervalRemark(): void {
     const delay =
       this.intervalMin + Math.random() * (this.intervalMax - this.intervalMin);
-    setTimeout(() => {
+    this.intervalTimer = setTimeout(() => {
       // NCBD dominates the rotation on Wednesdays, cameos the rest of the week.
       const ncbdChance = new Date().getDay() === 3 ? 0.45 : 0.15;
       const roll = Math.random();

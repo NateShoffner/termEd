@@ -101,7 +101,7 @@ const STEPS: DemoStep[] = [
 // Commands never execute; keystrokes and output are fed through the same
 // EdEngine hooks the live terminal uses, so every reaction is genuine.
 export async function runDemo(term: Terminal, ed: EdEngine): Promise<void> {
-  for (const line of getMotd('1.0.0')) {
+  for (const line of getMotd(window.termed.version)) {
     term.writeln(`  ${MOTD_COLORS[line.color] ?? ''}${line.text}\x1b[0m`);
   }
   term.writeln('');
