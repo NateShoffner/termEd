@@ -10,7 +10,8 @@ import { runDemo } from './demo';
 const term = new Terminal({
   allowTransparency: true,
   cursorBlink: true,
-  fontFamily: "'Cascadia Mono', 'Cascadia Code', Consolas, 'Courier New', monospace",
+  fontFamily:
+    "'CaskaydiaCove Nerd Font Mono', 'Cascadia Mono', 'Cascadia Code', Consolas, 'Courier New', monospace",
   fontSize: 15,
   lineHeight: 1.15,
   scrollback: 5000,
