@@ -1,4 +1,5 @@
 import { app, BrowserWindow, ipcMain, shell } from 'electron';
+import { autoUpdater } from 'electron-updater';
 import * as path from 'path';
 import * as os from 'os';
 import * as fs from 'fs';
@@ -198,6 +199,14 @@ app.whenReady().then(() => {
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
+
+  // Update metadata only exists on installed builds (electron-builder emits
+  // it alongside the artifacts our GitHub Actions release step publishes) -
+  // an unpacked dev run has nothing to check against.
+  if (app.isPackaged) {
+    autoUpdater.on('error', (err) => console.error('autoUpdater error:', err));
+    autoUpdater.checkForUpdatesAndNotify();
+  }
 });
 
 app.on('window-all-closed', () => {
