@@ -1,6 +1,6 @@
 {
   "name": "termed",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "termEd - the terminal that believes in you. A parody terminal emulator powered by Ed's relentless positivity and IBM RPG wisdom.",
   "main": "out/main.js",
   "scripts": {
