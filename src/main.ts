@@ -7,6 +7,12 @@ import { execFileSync } from 'child_process';
 import * as pty from '@lydell/node-pty';
 import { getMotd } from './motd';
 
+// Must run before the app is ready to affect the About panel, notifications,
+// and userData folder naming. Doesn't rename the dev-mode process itself -
+// npm start runs the stock Electron binary, so Activity Monitor/Cmd+Tab
+// still show "Electron" there; only a packaged build fixes that fully.
+app.setName('termEd');
+
 // Demo mode: scripted showcase session, no real shell. The env var makes the
 // flag visible to the preload/renderer, which run the actual script.
 if (process.argv.includes('--demo')) process.env.TERMED_DEMO = '1';

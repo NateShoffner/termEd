@@ -9,7 +9,9 @@
     "build": "node scripts/build.mjs",
     "check": "tsc --noEmit",
     "pack": "npm run build && electron-builder --dir",
-    "dist": "npm run build && electron-builder --publish=never"
+    "dist": "npm run build && electron-builder --publish=never",
+    "start:packaged": "npm run pack && open dist/mac*/termEd.app",
+    "postinstall": "node scripts/rename-electron-dev.mjs"
   },
   "keywords": [
     "terminal",
