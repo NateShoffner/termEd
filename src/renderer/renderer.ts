@@ -76,6 +76,7 @@ if (window.termed.demo) {
   const term = new Terminal(TERMINAL_OPTIONS);
   const fitAddon = new FitAddon();
   term.loadAddon(fitAddon);
+  term.loadAddon(new WebLinksAddon());
   term.open(pane);
   try {
     const webgl = new WebglAddon();
