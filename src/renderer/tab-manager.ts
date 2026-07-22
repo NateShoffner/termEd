@@ -1,19 +1,17 @@
-import { Terminal, type ITerminalOptions } from '@xterm/xterm';
-import { FitAddon } from '@xterm/addon-fit';
-import { WebglAddon } from '@xterm/addon-webgl';
-import { WebLinksAddon } from '@xterm/addon-web-links';
+import { type ITerminalOptions } from '@xterm/xterm';
 import type { EdQuotes } from './ed-quotes';
 import { EdEngine, type EdEngineOptions } from './ed-engine';
+import { PaneGroup, type SplitDirection } from './panes';
 
-// The DOM each tab gets: its own wallpaper backdrop and popup bubble, plus
-// the xterm mount point. Wrapping all three in one element lets a single
-// display:none/block toggle show or hide a whole tab's session at once.
-export function createSession(): { session: HTMLDivElement; pane: HTMLDivElement } {
+// The DOM each tab gets: its own wallpaper backdrop and popup bubble, plus the
+// root the pane tree mounts into. Wrapping all three in one element lets a
+// single display:none/block toggle show or hide a whole tab's session at once.
+export function createSession(): { session: HTMLDivElement; root: HTMLDivElement } {
   const session = document.createElement('div');
   session.className = 'tab-session';
   session.innerHTML = `
     <div class="ed-backdrop"></div>
-    <div class="terminal-pane"></div>
+    <div class="pane-root"></div>
     <div class="ed-bubble hidden">
       <img class="ed-avatar" src="../../assets/ed-1.png" alt="Ed" />
       <div class="ed-bubble-content">
@@ -22,14 +20,25 @@ export function createSession(): { session: HTMLDivElement; pane: HTMLDivElement
       </div>
     </div>
   `;
-  const pane = session.querySelector('.terminal-pane') as HTMLDivElement;
-  return { session, pane };
+  const root = session.querySelector('.pane-root') as HTMLDivElement;
+  return { session, root };
+}
+
+// Shells often set their OSC title to the full executable path (pwsh does),
+// which ellipsizes to a useless "C:\Program Files\WindowsA..." in a tab that
+// narrow. Anything that looks like a bare path collapses to its basename;
+// real titles ("user@host: ~/proj") are left alone.
+function shortenTitle(title: string): string {
+  if (!/^(?:[A-Za-z]:[\\/]|\/)/.test(title)) return title;
+  const base = title.replace(/^.*[\\/]/, '');
+  // A space in the last segment means this isn't a bare path after all.
+  if (!base || /\s/.test(base)) return title;
+  return base.replace(/\.exe$/i, '');
 }
 
 interface Tab {
   id: string;
-  term: Terminal;
-  fitAddon: FitAddon;
+  panes: PaneGroup;
   ed: EdEngine;
   session: HTMLDivElement;
   tabButton: HTMLButtonElement;
@@ -41,82 +50,49 @@ export interface TabManagerOptions {
   edOptions: EdEngineOptions;
 }
 
-// Owns one xterm instance + pty + EdEngine per open tab. Each tab's wallpaper
-// pose, popups, and cooldowns are fully independent - Ed on tab 2 has no idea
-// what happened on tab 1.
+// Owns one tab per open shell session. A tab is a PaneGroup (one pty + one
+// xterm per pane) plus a single EdEngine - Ed's wallpaper pose, popups, and
+// cooldowns are per tab, shared by every pane inside it.
 export class TabManager {
   private tabs = new Map<string, Tab>();
+  /** pty id -> owning tab, so pty:data can be routed to the right pane. */
+  private paneOwner = new Map<string, string>();
   private activeId: string | null = null;
   private tabList: HTMLElement;
   private panesRoot: HTMLElement;
   private counter = 0;
+  private nextTabId = 1;
 
   constructor(private opts: TabManagerOptions) {
     this.tabList = document.getElementById('ed-tablist')!;
     this.panesRoot = document.getElementById('terminal-panes')!;
 
-    window.termed.onData((tabId, data) => {
-      const tab = this.tabs.get(tabId);
-      if (!tab) return;
-      tab.term.write(data);
-      tab.ed.onOutput(data);
+    window.termed.onData((paneId, data) => {
+      this.tabFor(paneId)?.panes.write(paneId, data);
     });
 
-    window.termed.onExit((tabId) => this.removeTab(tabId));
-
-    window.addEventListener('resize', () => this.fitActive());
+    window.termed.onExit((paneId) => {
+      const tab = this.tabFor(paneId);
+      this.paneOwner.delete(paneId);
+      tab?.panes.removePane(paneId);
+    });
   }
 
   async createTab(): Promise<void> {
-    const tabId = await window.termed.createTab();
+    const tabId = `tab-${this.nextTabId++}`;
     this.counter += 1;
+    const defaultTitle = `Shell ${this.counter}`;
 
-    const { session, pane } = createSession();
+    const { session, root } = createSession();
     this.panesRoot.appendChild(session);
-
-    const term = new Terminal(this.opts.terminalOptions);
-    const fitAddon = new FitAddon();
-    term.loadAddon(fitAddon);
-    term.loadAddon(new WebLinksAddon());
-    term.open(pane);
-    try {
-      const webgl = new WebglAddon();
-      webgl.onContextLoss(() => webgl.dispose());
-      term.loadAddon(webgl);
-    } catch (e) {
-      console.warn('WebGL renderer unavailable, using DOM renderer:', e);
-    }
 
     const ed = new EdEngine(session, this.opts.quotes, this.opts.edOptions);
 
-    term.onData((data) => {
-      window.termed.input(tabId, data);
-      ed.onKeystroke(data);
-    });
+    const icon = document.createElement('img');
+    icon.className = 'ed-tab-icon';
+    icon.src = '../../assets/icon.png';
+    icon.alt = '';
 
-    // Intercept tab shortcuts before xterm forwards them to the shell.
-    term.attachCustomKeyEventHandler((event) => {
-      if (event.type !== 'keydown' || !(event.metaKey || event.ctrlKey)) return true;
-      const key = event.key.toLowerCase();
-      if (key === 't') {
-        event.preventDefault();
-        void this.createTab();
-        return false;
-      }
-      if (key === 'w') {
-        event.preventDefault();
-        this.closeTab(tabId);
-        return false;
-      }
-      if (key === 'tab') {
-        event.preventDefault();
-        this.cycleTab(event.shiftKey ? -1 : 1);
-        return false;
-      }
-      return true;
-    });
-
-    const defaultTitle = `Shell ${this.counter}`;
     const label = document.createElement('span');
     label.className = 'ed-tab-label';
     label.textContent = defaultTitle;
@@ -133,26 +109,50 @@ export class TabManager {
     tabButton.type = 'button';
     tabButton.className = 'ed-tab';
     tabButton.title = defaultTitle;
-    tabButton.append(label, close);
+    tabButton.append(icon, label, close);
     tabButton.addEventListener('click', () => this.activate(tabId));
+    // Middle-click closes, same as a browser tab.
+    tabButton.addEventListener('auxclick', (e) => {
+      if (e.button === 1) {
+        e.preventDefault();
+        this.closeTab(tabId);
+      }
+    });
     this.tabList.appendChild(tabButton);
 
-    // The shell (or whatever's running in it) sets this via OSC 0/2 title
-    // escapes - falls back to the plain "Shell N" label when nothing does.
-    term.onTitleChange((title) => {
-      const text = title.trim() || defaultTitle;
-      label.textContent = text;
-      tabButton.title = text;
+    const panes = new PaneGroup(root, {
+      terminalOptions: this.opts.terminalOptions,
+      createPty: async () => {
+        const paneId = await window.termed.createPty();
+        this.paneOwner.set(paneId, tabId);
+        return paneId;
+      },
+      closePty: (paneId) => window.termed.closePty(paneId),
+      input: (paneId, data) => window.termed.input(paneId, data),
+      resize: (paneId, cols, rows) => window.termed.resize(paneId, cols, rows),
+      onActiveInput: (data) => ed.onKeystroke(data),
+      onActiveOutput: (data) => ed.onOutput(data),
+      // The shell (or whatever's running in it) sets this via OSC 0/2 title
+      // escapes - falls back to the plain "Shell N" label when nothing does.
+      onTitle: (title) => {
+        const text = title ? shortenTitle(title) : defaultTitle;
+        label.textContent = text;
+        tabButton.title = text;
+      },
+      onEmpty: () => this.removeTab(tabId),
+      onKeyDown: (event) => this.handleKey(event, tabId),
     });
 
-    this.tabs.set(tabId, { id: tabId, term, fitAddon, ed, session, tabButton });
+    this.tabs.set(tabId, { id: tabId, panes, ed, session, tabButton });
     this.activate(tabId);
+    await panes.init();
   }
 
   activate(tabId: string): void {
     const tab = this.tabs.get(tabId);
-    if (!tab || this.activeId === tabId) {
-      tab?.term.focus();
+    if (!tab) return;
+    if (this.activeId === tabId) {
+      tab.panes.focusActive();
       return;
     }
     this.activeId = tabId;
@@ -161,34 +161,51 @@ export class TabManager {
       t.session.classList.toggle('active', isActive);
       t.tabButton.classList.toggle('active', isActive);
     }
-    this.fitActive();
-    tab.term.focus();
+    // Panes measured zero while the tab was hidden, so they need a re-fit now
+    // that they have real dimensions again.
+    tab.panes.fitAll();
+    tab.panes.focusActive();
   }
 
   closeTab(tabId: string): void {
-    window.termed.closeTab(tabId);
+    const tab = this.tabs.get(tabId);
+    if (!tab) return;
+    tab.panes.destroy();
+    this.removeTab(tabId);
   }
 
   closeActive(): void {
     if (this.activeId) this.closeTab(this.activeId);
   }
 
+  splitActive(dir: SplitDirection): void {
+    if (this.activeId) void this.tabs.get(this.activeId)?.panes.split(dir);
+  }
+
+  private tabFor(paneId: string): Tab | undefined {
+    const tabId = this.paneOwner.get(paneId);
+    return tabId ? this.tabs.get(tabId) : undefined;
+  }
+
   private cycleTab(direction: 1 | -1): void {
     const ids = [...this.tabs.keys()];
     if (ids.length < 2 || !this.activeId) return;
     const index = ids.indexOf(this.activeId);
-    const next = ids[(index + direction + ids.length) % ids.length];
-    this.activate(next);
+    this.activate(ids[(index + direction + ids.length) % ids.length]);
   }
 
   private removeTab(tabId: string): void {
     const tab = this.tabs.get(tabId);
     if (!tab) return;
+    // EdEngine has no other lifecycle hook - a missed destroy() leaks its
+    // recurring timer chain forever.
     tab.ed.destroy();
-    tab.term.dispose();
     tab.session.remove();
     tab.tabButton.remove();
     this.tabs.delete(tabId);
+    for (const [paneId, owner] of this.paneOwner) {
+      if (owner === tabId) this.paneOwner.delete(paneId);
+    }
 
     if (this.activeId === tabId) {
       this.activeId = null;
@@ -199,10 +216,27 @@ export class TabManager {
     if (this.tabs.size === 0) window.close();
   }
 
-  private fitActive(): void {
-    const tab = this.activeId ? this.tabs.get(this.activeId) : undefined;
-    if (!tab) return;
-    tab.fitAddon.fit();
-    window.termed.resize(tab.id, tab.term.cols, tab.term.rows);
+  // Tab-level shortcuts, consulted by each pane's xterm key handler. Returns
+  // true when the event was consumed and must not reach the shell.
+  private handleKey(event: KeyboardEvent, tabId: string): boolean {
+    if (!(event.metaKey || event.ctrlKey)) return false;
+    const key = event.key.toLowerCase();
+    if (key === 'tab') {
+      event.preventDefault();
+      this.cycleTab(event.shiftKey ? -1 : 1);
+      return true;
+    }
+    if (event.shiftKey) return false;
+    if (key === 't') {
+      event.preventDefault();
+      void this.createTab();
+      return true;
+    }
+    if (key === 'w') {
+      event.preventDefault();
+      this.closeTab(tabId);
+      return true;
+    }
+    return false;
   }
 }

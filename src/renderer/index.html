@@ -11,11 +11,20 @@
   <div id="ed-scrim"></div>
 
   <div id="ed-tabbar">
+    <img id="ed-tabbar-icon" src="../../assets/icon.png" alt="" />
     <div id="ed-tablist" role="tablist"></div>
     <div id="ed-tabbar-actions">
       <button id="ed-new-tab" type="button" title="New tab (Ctrl+T)" aria-label="New tab">+</button>
-      <button id="ed-about-btn" type="button" title="About termEd" aria-label="About termEd">i</button>
+      <button id="ed-tab-menu" type="button" title="Open a new tab menu" aria-label="Menu">⌄</button>
     </div>
+  </div>
+
+  <div id="ed-menu" class="hidden" role="menu">
+    <button type="button" data-action="new-tab" role="menuitem">New tab<kbd>Ctrl+T</kbd></button>
+    <button type="button" data-action="split-row" role="menuitem">Split right<kbd>Alt+Shift++</kbd></button>
+    <button type="button" data-action="split-column" role="menuitem">Split down<kbd>Alt+Shift+-</kbd></button>
+    <div class="ed-menu-sep"></div>
+    <button type="button" data-action="about" role="menuitem">About termEd</button>
   </div>
   <!-- Each tab gets its own backdrop + bubble + terminal, appended here at
        runtime (see tab-manager.ts createSession) so Ed's wallpaper and

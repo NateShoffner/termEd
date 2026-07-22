@@ -68,31 +68,41 @@ img {
   pointer-events: none;
 }
 
-/* Tab bar - Ghostty-style flush tabs: active tab is brighter, sits flush
-   against the content below it (no border seam), inactive tabs recede. */
+/* Tab bar - Windows Terminal style: the app icon anchors the left edge, tabs
+   share the remaining width up to a cap, and the active tab reads as the same
+   surface as the terminal pane below it. */
 #ed-tabbar {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  height: 38px;
+  height: 36px;
   display: flex;
-  align-items: flex-end;
-  gap: 8px;
-  padding: 5px 8px 0;
-  background: rgba(8, 8, 14, 0.65);
+  align-items: stretch;
+  gap: 6px;
+  padding: 0 6px;
+  background: rgba(8, 8, 14, 0.72);
   backdrop-filter: blur(14px) saturate(140%);
   -webkit-backdrop-filter: blur(14px) saturate(140%);
   z-index: 5;
 }
 
+#ed-tabbar-icon {
+  width: 16px;
+  height: 16px;
+  align-self: center;
+  margin: 0 4px 0 2px;
+  opacity: 0.9;
+  flex-shrink: 0;
+}
+
 #ed-tablist {
   display: flex;
-  align-items: flex-end;
-  height: 33px;
+  align-items: stretch;
   flex: 1;
   min-width: 0;
-  gap: 4px;
+  gap: 2px;
+  padding: 4px 0 0;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -104,32 +114,44 @@ img {
 .ed-tab {
   display: flex;
   align-items: center;
-  gap: 6px;
-  flex: 1 1 150px;
+  gap: 7px;
+  flex: 1 1 200px;
   max-width: 220px;
-  min-width: 80px;
-  height: 100%;
-  padding: 0 10px;
+  min-width: 56px;
+  padding: 0 8px 0 10px;
   border: none;
-  border-radius: 7px 7px 0 0;
-  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px 6px 0 0;
+  background: transparent;
   color: #9aa3c0;
   font: inherit;
   font-size: 12px;
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: background 0.12s ease, color 0.12s ease;
 }
 
 .ed-tab:hover {
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.06);
   color: #cfe6ff;
 }
 
 .ed-tab.active {
-  background: rgba(24, 26, 40, 0.95);
+  /* Matches .terminal-pane's tint so the tab reads as part of the surface
+     below it, with no seam between them. */
+  background: rgba(20, 22, 34, 0.92);
   color: #eef2ff;
-  box-shadow: inset 0 2px 0 #6fc3ff;
+}
+
+.ed-tab-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  opacity: 0.55;
+  transition: opacity 0.12s ease;
+}
+
+.ed-tab.active .ed-tab-icon {
+  opacity: 1;
 }
 
 .ed-tab-label {
@@ -164,52 +186,182 @@ img {
 #ed-tabbar-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 2px;
   flex-shrink: 0;
-  margin-bottom: 4px;
 }
 
 #ed-new-tab,
-#ed-about-btn {
-  width: 24px;
-  height: 24px;
+#ed-tab-menu {
+  width: 26px;
+  height: 26px;
+  align-self: center;
   display: flex;
   align-items: center;
   justify-content: center;
   border: none;
-  border-radius: 6px;
+  border-radius: 5px;
   background: transparent;
   color: #9aa3c0;
   font: inherit;
   font-size: 14px;
+  line-height: 1;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: background 0.12s ease, color 0.12s ease;
 }
 
-#ed-about-btn {
-  font-style: italic;
-  font-family: Georgia, serif;
+#ed-tab-menu {
+  font-size: 11px;
 }
 
 #ed-new-tab:hover,
-#ed-about-btn:hover {
+#ed-tab-menu:hover {
   background: rgba(255, 255, 255, 0.08);
   color: #eef2ff;
 }
 
-.terminal-pane {
+/* Tab bar dropdown */
+#ed-menu {
+  position: fixed;
+  top: 38px;
+  right: 8px;
+  z-index: 15;
+  min-width: 220px;
+  padding: 5px;
+  display: flex;
+  flex-direction: column;
+  background: rgba(22, 24, 38, 0.94);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid rgba(120, 200, 255, 0.18);
+  border-radius: 8px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
+}
+
+#ed-menu.hidden {
+  display: none;
+}
+
+#ed-menu button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 7px 10px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: #eef2ff;
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+#ed-menu button:hover {
+  background: rgba(120, 200, 255, 0.14);
+}
+
+#ed-menu kbd {
+  font-family: 'Cascadia Mono', Consolas, monospace;
+  font-size: 11px;
+  color: #7a8199;
+}
+
+.ed-menu-sep {
+  height: 1px;
+  margin: 4px 6px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Pane tree. Sessions span the full viewport (so the backdrop bleeds behind
+   the tab bar); this root offsets the actual terminals below it. */
+.pane-root {
   position: absolute;
-  /* Sessions span the full viewport (so the backdrop bleeds behind the tab
-     bar); this offsets the actual xterm mount below it. */
-  inset: 52px 8px 12px 12px;
+  inset: 42px 8px 8px 8px;
   z-index: 2;
-  /* A flat tint behind the text so it reads clearly everywhere. The backdrop
-     itself is blurred (see .ed-backdrop) so there's no sharp detail here to
-     create a seam at the panel edge. */
+  display: flex;
+}
+
+.pane-root > * {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+}
+
+.pane-split {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+}
+
+.pane-split-row {
+  flex-direction: row;
+}
+
+.pane-split-column {
+  flex-direction: column;
+}
+
+.pane-split > .terminal-pane,
+.pane-split > .pane-split {
+  min-width: 0;
+  min-height: 0;
+}
+
+.pane-divider {
+  flex: 0 0 8px;
+  position: relative;
+  background: transparent;
+}
+
+.pane-divider-row {
+  cursor: col-resize;
+}
+
+.pane-divider-column {
+  cursor: row-resize;
+}
+
+/* The grab affordance is a thin line centered in the divider's hit area, so
+   the target stays comfortably wide without a chunky gutter. */
+.pane-divider::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 2px;
+  background: transparent;
+  transition: background 0.12s ease;
+}
+
+.pane-divider:hover::after,
+.pane-split.resizing > .pane-divider::after {
+  background: rgba(120, 200, 255, 0.35);
+}
+
+/* A flat tint behind the text so it reads clearly everywhere. The backdrop
+   itself is blurred (see .ed-backdrop) so there's no sharp detail here to
+   create a seam at the panel edge. */
+.terminal-pane {
+  position: relative;
+  overflow: hidden;
+  padding: 6px 4px 6px 8px;
   background: rgba(9, 10, 16, 0.45);
   border: 1px solid rgba(120, 200, 255, 0.1);
-  border-radius: 10px;
+  border-radius: 8px;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  transition: border-color 0.12s ease;
+}
+
+/* Only meaningful once a tab holds more than one pane; a lone pane keeps the
+   same quiet border either way. */
+.pane-split .terminal-pane.active-pane {
+  border-color: rgba(120, 200, 255, 0.42);
+}
+
+/* Dragging a divider must not let the pointer land inside a terminal and
+   start a text selection. */
+.pane-split.resizing .terminal-pane {
+  pointer-events: none;
 }
 
 .xterm .xterm-viewport {

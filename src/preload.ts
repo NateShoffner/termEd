@@ -5,21 +5,23 @@ const termedApi = {
   demo: process.env.TERMED_DEMO === '1',
   version: __APP_VERSION__,
   commit: __COMMIT_HASH__,
-  createTab: (): Promise<string> => ipcRenderer.invoke('tab:create'),
-  closeTab: (tabId: string): void => {
-    ipcRenderer.send('tab:close', tabId);
+  // Ids are per *pane*, not per tab - a tab can hold several split panes, each
+  // backed by its own pty.
+  createPty: (): Promise<string> => ipcRenderer.invoke('pty:create'),
+  closePty: (paneId: string): void => {
+    ipcRenderer.send('pty:close', paneId);
   },
-  onData: (callback: (tabId: string, data: string) => void): void => {
-    ipcRenderer.on('pty:data', (_event, tabId: string, data: string) => callback(tabId, data));
+  onData: (callback: (paneId: string, data: string) => void): void => {
+    ipcRenderer.on('pty:data', (_event, paneId: string, data: string) => callback(paneId, data));
   },
-  onExit: (callback: (tabId: string) => void): void => {
-    ipcRenderer.on('pty:exit', (_event, tabId: string) => callback(tabId));
+  onExit: (callback: (paneId: string) => void): void => {
+    ipcRenderer.on('pty:exit', (_event, paneId: string) => callback(paneId));
   },
-  input: (tabId: string, data: string): void => {
-    ipcRenderer.send('pty:input', tabId, data);
+  input: (paneId: string, data: string): void => {
+    ipcRenderer.send('pty:input', paneId, data);
   },
-  resize: (tabId: string, cols: number, rows: number): void => {
-    ipcRenderer.send('pty:resize', tabId, cols, rows);
+  resize: (paneId: string, cols: number, rows: number): void => {
+    ipcRenderer.send('pty:resize', paneId, cols, rows);
   },
   openExternal: (url: string): void => {
     ipcRenderer.send('app:open-external', url);

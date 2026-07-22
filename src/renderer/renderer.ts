@@ -7,6 +7,7 @@ import { ED_QUOTES } from './ed-quotes';
 import { EdEngine, type EdEngineOptions } from './ed-engine';
 import { runDemo } from './demo';
 import { TabManager, createSession } from './tab-manager';
+import { createPaneEl } from './panes';
 
 const TERMINAL_OPTIONS: ITerminalOptions = {
   allowTransparency: true,
@@ -61,6 +62,8 @@ const edOptions: EdEngineOptions = {
     : {}),
 };
 
+let tabManager: TabManager | null = null;
+
 if (window.termed.demo) {
   // Scripted showcase: one fake, non-interactive tab, no real pty.
   document.getElementById('ed-new-tab')!.style.display = 'none';
@@ -69,9 +72,13 @@ if (window.termed.demo) {
   demoTab.textContent = 'Demo';
   document.getElementById('ed-tablist')!.appendChild(demoTab);
 
-  const { session, pane } = createSession();
+  const { session, root } = createSession();
   session.classList.add('active');
   document.getElementById('terminal-panes')!.appendChild(session);
+
+  const pane = createPaneEl();
+  pane.classList.add('active-pane');
+  root.appendChild(pane);
 
   const term = new Terminal(TERMINAL_OPTIONS);
   const fitAddon = new FitAddon();
@@ -92,7 +99,7 @@ if (window.termed.demo) {
   const ed = new EdEngine(session, ED_QUOTES, edOptions);
   void runDemo(term, ed);
 } else {
-  const tabManager = new TabManager({
+  tabManager = new TabManager({
     terminalOptions: TERMINAL_OPTIONS,
     quotes: ED_QUOTES,
     edOptions,
@@ -100,10 +107,43 @@ if (window.termed.demo) {
 
   document
     .getElementById('ed-new-tab')!
-    .addEventListener('click', () => void tabManager.createTab());
+    .addEventListener('click', () => void tabManager!.createTab());
 
   void tabManager.createTab();
 }
+
+// Tab bar dropdown menu
+const menu = document.getElementById('ed-menu')!;
+const menuButton = document.getElementById('ed-tab-menu')!;
+const closeMenu = () => menu.classList.add('hidden');
+
+// Demo mode has no tab manager, so only the About entry does anything.
+if (window.termed.demo) {
+  for (const el of menu.querySelectorAll<HTMLElement>(
+    '[data-action="new-tab"], [data-action="split-row"], [data-action="split-column"], .ed-menu-sep'
+  )) {
+    el.style.display = 'none';
+  }
+}
+
+menuButton.addEventListener('click', (e) => {
+  e.stopPropagation();
+  menu.classList.toggle('hidden');
+});
+
+document.addEventListener('click', (e) => {
+  if (!menu.classList.contains('hidden') && !menu.contains(e.target as Node)) closeMenu();
+});
+
+menu.addEventListener('click', (e) => {
+  const action = (e.target as HTMLElement).closest('button')?.dataset.action;
+  if (!action) return;
+  closeMenu();
+  if (action === 'new-tab') void tabManager?.createTab();
+  else if (action === 'split-row') tabManager?.splitActive('row');
+  else if (action === 'split-column') tabManager?.splitActive('column');
+  else if (action === 'about') openAbout();
+});
 
 // About overlay
 const aboutOverlay = document.getElementById('ed-about')!;
@@ -113,7 +153,6 @@ document.getElementById('ed-about-commit')!.textContent = window.termed.commit;
 const openAbout = () => aboutOverlay.classList.remove('hidden');
 const closeAbout = () => aboutOverlay.classList.add('hidden');
 
-document.getElementById('ed-about-btn')!.addEventListener('click', openAbout);
 document.getElementById('ed-about-close')!.addEventListener('click', closeAbout);
 aboutOverlay.addEventListener('click', (e) => {
   if (e.target === aboutOverlay) closeAbout();
@@ -123,5 +162,7 @@ document.getElementById('ed-about-link')!.addEventListener('click', (e) => {
   window.termed.openExternal('https://nateshoffner.com');
 });
 window.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && !aboutOverlay.classList.contains('hidden')) closeAbout();
+  if (e.key !== 'Escape') return;
+  if (!aboutOverlay.classList.contains('hidden')) closeAbout();
+  closeMenu();
 });

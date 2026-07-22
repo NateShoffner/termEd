@@ -87,7 +87,7 @@ function createWindow(): void {
   }
 }
 
-function spawnTabPty(win: BrowserWindow, tabId: string): pty.IPty {
+function spawnPanePty(win: BrowserWindow, paneId: string): pty.IPty {
   const shellPath = resolveShell();
   // The MOTD prints via the shell itself - ConPTY repaints the whole viewport
   // at startup, so anything written straight to xterm gets wiped.
@@ -121,53 +121,54 @@ function spawnTabPty(win: BrowserWindow, tabId: string): pty.IPty {
         flushTimer = null;
         const chunk = ptyBuffer;
         ptyBuffer = '';
-        if (!win.isDestroyed()) win.webContents.send('pty:data', tabId, chunk);
+        if (!win.isDestroyed()) win.webContents.send('pty:data', paneId, chunk);
       }, 4);
     }
   });
 
   ptyProc.onExit(() => {
-    if (!win.isDestroyed()) win.webContents.send('pty:exit', tabId);
+    if (!win.isDestroyed()) win.webContents.send('pty:exit', paneId);
   });
 
   return ptyProc;
 }
 
-// One pty per tab, keyed by an id the renderer mints per xterm instance.
+// One pty per pane, keyed by an id the renderer mints per xterm instance. A
+// tab may own several of these at once (split panes).
 function attachTabs(win: BrowserWindow): void {
   const ptys = new Map<string, pty.IPty>();
   let nextId = 1;
 
   const onCreate = (event: Electron.IpcMainInvokeEvent): string | null => {
     if (event.sender !== win.webContents) return null;
-    const tabId = String(nextId++);
-    ptys.set(tabId, spawnTabPty(win, tabId));
-    return tabId;
+    const paneId = String(nextId++);
+    ptys.set(paneId, spawnPanePty(win, paneId));
+    return paneId;
   };
 
-  const onClose = (event: Electron.IpcMainEvent, tabId: string): void => {
+  const onClose = (event: Electron.IpcMainEvent, paneId: string): void => {
     if (event.sender !== win.webContents) return;
-    ptys.get(tabId)?.kill();
-    ptys.delete(tabId);
+    ptys.get(paneId)?.kill();
+    ptys.delete(paneId);
   };
 
-  const onInput = (event: Electron.IpcMainEvent, tabId: string, data: string): void => {
-    if (event.sender === win.webContents) ptys.get(tabId)?.write(data);
+  const onInput = (event: Electron.IpcMainEvent, paneId: string, data: string): void => {
+    if (event.sender === win.webContents) ptys.get(paneId)?.write(data);
   };
 
   const onResize = (
     event: Electron.IpcMainEvent,
-    tabId: string,
+    paneId: string,
     cols: number,
     rows: number
   ): void => {
     if (event.sender === win.webContents && cols > 0 && rows > 0) {
-      ptys.get(tabId)?.resize(cols, rows);
+      ptys.get(paneId)?.resize(cols, rows);
     }
   };
 
-  ipcMain.handle('tab:create', onCreate);
-  ipcMain.on('tab:close', onClose);
+  ipcMain.handle('pty:create', onCreate);
+  ipcMain.on('pty:close', onClose);
   ipcMain.on('pty:input', onInput);
   ipcMain.on('pty:resize', onResize);
 
@@ -178,8 +179,8 @@ function attachTabs(win: BrowserWindow): void {
       } catch {}
     }
     ptys.clear();
-    ipcMain.removeHandler('tab:create');
-    ipcMain.off('tab:close', onClose);
+    ipcMain.removeHandler('pty:create');
+    ipcMain.off('pty:close', onClose);
     ipcMain.off('pty:input', onInput);
     ipcMain.off('pty:resize', onResize);
   });
