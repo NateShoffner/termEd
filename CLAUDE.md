@@ -35,7 +35,7 @@ A tab is a `PaneGroup` (a binary split tree of terminals) plus a single Ed. The 
 
 ### Version/commit are build-time constants, not runtime lookups
 
-`scripts/build.mjs` runs `git describe --tags --always --dirty` and `git rev-parse --short HEAD` and injects them via esbuild `define` as `__APP_VERSION__`/`__COMMIT_HASH__` (ambient-declared in `src/build-env.d.ts`). Packaged apps ship without `.git`, so this can't be resolved at runtime - it must be baked in at build time. Both main (MOTD) and renderer (About screen, via `preload.ts`) reference these globals directly; nothing calls `app.getVersion()` for display purposes.
+`scripts/build.mjs` runs `git describe --tags --always --dirty` and `git rev-parse --short HEAD` and injects them via esbuild `define` as `__APP_VERSION__`/`__COMMIT_HASH__`, plus `package.json`'s `version` as `__DISPLAY_VERSION__` (all ambient-declared in `src/build-env.d.ts`). Packaged apps ship without `.git`, so this can't be resolved at runtime - it must be baked in at build time. The window title and MOTD show the plain `__DISPLAY_VERSION__` (e.g. `v1.1.0`); the About screen shows the full `git describe` string and links the commit to GitHub. Both main (MOTD) and renderer (title, About screen, via `preload.ts`) reference these globals directly; nothing calls `app.getVersion()` for display purposes.
 
 ### Demo mode
 
@@ -53,4 +53,4 @@ Pushing a `vX.Y.Z` tag triggers `.github/workflows/build.yml`: builds installers
 
 ### IPC surface (`src/preload.ts`)
 
-`window.termed` is the entire main↔renderer contract: `platform`, `demo`, `version`, `commit`, `createPty()`/`closePty()`/`onData()`/`onExit()`/`input()`/`resize()` (all **pane**-id-scoped - main has no concept of tabs), and `openExternal(url)`. `main.ts` allowlists `openExternal` to one exact URL (the About screen's credits link) - it is not general-purpose arbitrary navigation, by design.
+`window.termed` is the entire main↔renderer contract: `platform`, `demo`, `version`, `displayVersion`, `commit`, `createPty()`/`closePty()`/`onData()`/`onExit()`/`input()`/`resize()` (all **pane**-id-scoped - main has no concept of tabs), and `openExternal(url)`. `main.ts` allowlists `openExternal` to the exact URLs in `src/links.ts` (the About screen's credits link and the build's GitHub commit page, whose hash is baked in at build time) - it is not general-purpose arbitrary navigation, by design.

@@ -8,12 +8,17 @@ import { EdEngine, type EdEngineOptions } from './ed-engine';
 import { runDemo } from './demo';
 import { TabManager, createSession } from './tab-manager';
 import { createPaneEl } from './panes';
+import { COMMIT_URL, CREDITS_URL } from '../links';
 
 const TERMINAL_OPTIONS: ITerminalOptions = {
   allowTransparency: true,
   cursorBlink: true,
+  // Nerd Font families come first so prompt themes (oh-my-posh, starship) get
+  // their icon glyphs instead of tofu boxes. Nerd Fonts has shipped several
+  // naming schemes over its versions; a family that isn't installed just
+  // falls through to the next one.
   fontFamily:
-    "'CaskaydiaCove Nerd Font Mono', 'Cascadia Mono', 'Cascadia Code', Consolas, 'Courier New', monospace",
+    "'CaskaydiaCove Nerd Font Mono', 'CaskaydiaCove NFM', 'CaskaydiaCove Nerd Font', 'CaskaydiaCove NF', 'Symbols Nerd Font Mono', 'Cascadia Mono', 'Cascadia Code', Consolas, 'Courier New', monospace",
   fontSize: 15,
   lineHeight: 1.15,
   scrollback: 5000,
@@ -145,10 +150,26 @@ menu.addEventListener('click', (e) => {
   else if (action === 'about') openAbout();
 });
 
+// The page's <title> drives the native window title.
+document.title = `termEd v${window.termed.displayVersion}`;
+
 // About overlay
 const aboutOverlay = document.getElementById('ed-about')!;
 document.getElementById('ed-about-version')!.textContent = window.termed.version;
-document.getElementById('ed-about-commit')!.textContent = window.termed.commit;
+// Builds without git report "unknown", which has no commit page to link to.
+const aboutCommit = document.getElementById('ed-about-commit')!;
+if (window.termed.commit === 'unknown') {
+  aboutCommit.textContent = window.termed.commit;
+} else {
+  const commitLink = document.createElement('a');
+  commitLink.href = COMMIT_URL;
+  commitLink.textContent = window.termed.commit;
+  commitLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    window.termed.openExternal(COMMIT_URL);
+  });
+  aboutCommit.appendChild(commitLink);
+}
 
 const openAbout = () => aboutOverlay.classList.remove('hidden');
 const closeAbout = () => aboutOverlay.classList.add('hidden');
@@ -159,7 +180,7 @@ aboutOverlay.addEventListener('click', (e) => {
 });
 document.getElementById('ed-about-link')!.addEventListener('click', (e) => {
   e.preventDefault();
-  window.termed.openExternal('https://nateshoffner.com');
+  window.termed.openExternal(CREDITS_URL);
 });
 window.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;

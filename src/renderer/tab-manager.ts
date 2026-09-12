@@ -88,11 +88,6 @@ export class TabManager {
 
     const ed = new EdEngine(session, this.opts.quotes, this.opts.edOptions);
 
-    const icon = document.createElement('img');
-    icon.className = 'ed-tab-icon';
-    icon.src = '../../assets/icon.png';
-    icon.alt = '';
-
     const label = document.createElement('span');
     label.className = 'ed-tab-label';
     label.textContent = defaultTitle;
@@ -109,7 +104,7 @@ export class TabManager {
     tabButton.type = 'button';
     tabButton.className = 'ed-tab';
     tabButton.title = defaultTitle;
-    tabButton.append(icon, label, close);
+    tabButton.append(label, close);
     tabButton.addEventListener('click', () => this.activate(tabId));
     // Middle-click closes, same as a browser tab.
     tabButton.addEventListener('auxclick', (e) => {

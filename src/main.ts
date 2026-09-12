@@ -6,6 +6,7 @@ import * as fs from 'fs';
 import { execFileSync } from 'child_process';
 import * as pty from '@lydell/node-pty';
 import { getMotd } from './motd';
+import { COMMIT_URL, CREDITS_URL } from './links';
 
 // Must run before the app is ready to affect the About panel, notifications,
 // and userData folder naming. Doesn't rename the dev-mode process itself -
@@ -94,7 +95,7 @@ function spawnPanePty(win: BrowserWindow, paneId: string): pty.IPty {
   const psQuote = (s: string) => `'${s.replace(/'/g, "''")}'`;
   const motdCommand = [
     "Write-Host ''",
-    ...getMotd(__APP_VERSION__).map(
+    ...getMotd(__DISPLAY_VERSION__).map(
       (line) => `Write-Host ${psQuote('  ' + line.text)} -ForegroundColor ${line.color}`
     ),
     "Write-Host ''",
@@ -189,8 +190,8 @@ function attachTabs(win: BrowserWindow): void {
 app.setAppUserModelId('dev.nateshoffner.termed');
 
 // Fixed allowlist, not arbitrary renderer-controlled navigation - this is
-// only ever called with the credits-panel link.
-const ALLOWED_EXTERNAL_URLS = new Set(['https://nateshoffner.com']);
+// only ever called with the About screen's credits and commit links.
+const ALLOWED_EXTERNAL_URLS = new Set([CREDITS_URL, COMMIT_URL]);
 
 ipcMain.on('app:open-external', (_event, url: string) => {
   if (ALLOWED_EXTERNAL_URLS.has(url)) shell.openExternal(url);

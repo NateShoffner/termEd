@@ -68,9 +68,10 @@ img {
   pointer-events: none;
 }
 
-/* Tab bar - Windows Terminal style: the app icon anchors the left edge, tabs
-   share the remaining width up to a cap, and the active tab reads as the same
-   surface as the terminal pane below it. */
+/* Tab bar - Windows Terminal style: tabs share the width up to a cap, and the
+   active tab sits flush on the terminal pane below it so the two read as one
+   surface. The native title bar already shows the app icon, so the tab bar
+   doesn't repeat it. */
 #ed-tabbar {
   position: fixed;
   top: 0;
@@ -79,21 +80,14 @@ img {
   height: 36px;
   display: flex;
   align-items: stretch;
-  gap: 6px;
-  padding: 0 6px;
+  gap: 8px;
+  /* 16px on the left clears the pane's 8px corner radius, so the first tab
+     lands on the straight part of the pane's top edge instead of the curve. */
+  padding: 0 8px 0 16px;
   background: rgba(8, 8, 14, 0.72);
   backdrop-filter: blur(14px) saturate(140%);
   -webkit-backdrop-filter: blur(14px) saturate(140%);
   z-index: 5;
-}
-
-#ed-tabbar-icon {
-  width: 16px;
-  height: 16px;
-  align-self: center;
-  margin: 0 4px 0 2px;
-  opacity: 0.9;
-  flex-shrink: 0;
 }
 
 #ed-tablist {
@@ -114,17 +108,18 @@ img {
 .ed-tab {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   flex: 1 1 200px;
   max-width: 220px;
   min-width: 56px;
-  padding: 0 8px 0 10px;
+  padding: 0 8px 0 12px;
   border: none;
   border-radius: 6px 6px 0 0;
   background: transparent;
   color: #9aa3c0;
   font: inherit;
   font-size: 12px;
+  text-align: left;
   cursor: pointer;
   white-space: nowrap;
   transition: background 0.12s ease, color 0.12s ease;
@@ -136,22 +131,11 @@ img {
 }
 
 .ed-tab.active {
-  /* Matches .terminal-pane's tint so the tab reads as part of the surface
-     below it, with no seam between them. */
-  background: rgba(20, 22, 34, 0.92);
+  /* Tuned to the pane's composited color (its translucent tint over the
+     backdrop), not its raw rgba, so the tab reads as part of the surface
+     below it. */
+  background: rgba(12, 13, 20, 0.85);
   color: #eef2ff;
-}
-
-.ed-tab-icon {
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
-  opacity: 0.55;
-  transition: opacity 0.12s ease;
-}
-
-.ed-tab.active .ed-tab-icon {
-  opacity: 1;
 }
 
 .ed-tab-label {
@@ -183,38 +167,40 @@ img {
   opacity: 1 !important;
 }
 
+/* Same top padding as #ed-tablist so the buttons center on the tabs rather
+   than on the whole bar. */
 #ed-tabbar-actions {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
+  padding-top: 4px;
   flex-shrink: 0;
 }
 
-#ed-new-tab,
-#ed-tab-menu {
-  width: 26px;
-  height: 26px;
-  align-self: center;
+/* Every action button is the same box with a same-sized stroked SVG, so the
+   glyphs line up regardless of font metrics. */
+.ed-tabbar-button {
+  width: 34px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 0;
   border: none;
-  border-radius: 5px;
+  border-radius: 6px;
   background: transparent;
   color: #9aa3c0;
-  font: inherit;
-  font-size: 14px;
-  line-height: 1;
   cursor: pointer;
   transition: background 0.12s ease, color 0.12s ease;
 }
 
-#ed-tab-menu {
-  font-size: 11px;
+.ed-tabbar-button svg {
+  display: block;
+  width: 16px;
+  height: 16px;
 }
 
-#ed-new-tab:hover,
-#ed-tab-menu:hover {
+.ed-tabbar-button:hover {
   background: rgba(255, 255, 255, 0.08);
   color: #eef2ff;
 }
@@ -277,7 +263,7 @@ img {
    the tab bar); this root offsets the actual terminals below it. */
 .pane-root {
   position: absolute;
-  inset: 42px 8px 8px 8px;
+  inset: 36px 8px 8px 8px;
   z-index: 2;
   display: flex;
 }
@@ -544,11 +530,13 @@ img {
   color: #9aa3c0;
 }
 
+#ed-about-meta a,
 #ed-about-credits a {
   color: #6fc3ff;
   text-decoration: none;
 }
 
+#ed-about-meta a:hover,
 #ed-about-credits a:hover {
   text-decoration: underline;
 }

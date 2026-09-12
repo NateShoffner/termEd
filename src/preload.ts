@@ -4,6 +4,7 @@ const termedApi = {
   platform: process.platform,
   demo: process.env.TERMED_DEMO === '1',
   version: __APP_VERSION__,
+  displayVersion: __DISPLAY_VERSION__,
   commit: __COMMIT_HASH__,
   // Ids are per *pane*, not per tab - a tab can hold several split panes, each
   // backed by its own pty.

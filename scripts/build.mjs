@@ -1,5 +1,5 @@
 import { build } from 'esbuild';
-import { cpSync, mkdirSync } from 'fs';
+import { cpSync, mkdirSync, readFileSync } from 'fs';
 import { execSync } from 'child_process';
 
 mkdirSync('out/renderer', { recursive: true });
@@ -13,9 +13,13 @@ function git(cmd, fallback) {
 }
 
 // Baked in at build time - packaged builds ship without .git, so this can't
-// be resolved at runtime.
+// be resolved at runtime. __APP_VERSION__ is the full git describe string for
+// the About screen; __DISPLAY_VERSION__ is the plain release version (e.g.
+// 1.1.0) for the window title and MOTD.
+const { version: displayVersion } = JSON.parse(readFileSync('package.json', 'utf8'));
 const define = {
   __APP_VERSION__: JSON.stringify(git('git describe --tags --always --dirty', '0.0.0-dev')),
+  __DISPLAY_VERSION__: JSON.stringify(displayVersion),
   __COMMIT_HASH__: JSON.stringify(git('git rev-parse --short HEAD', 'unknown')),
 };
 
