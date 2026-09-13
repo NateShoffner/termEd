@@ -1,6 +1,8 @@
 import type { CommandReaction, EdQuotes, QuoteCategory } from './ed-quotes';
+import type { EdChattiness } from '../settings';
 
-export interface EdEngineOptions {
+// How often Ed talks. Unset fields use DEFAULT_PACING.
+export interface EdPacing {
   globalCooldown?: number;
   reactionCooldown?: number;
   idleThreshold?: number;
@@ -9,8 +11,51 @@ export interface EdEngineOptions {
   hypeChance?: number;
   outputSettleMs?: number;
   outputMaxWaitMs?: number;
+}
+
+export interface EdEngineOptions extends EdPacing {
   photos?: string[];
   platform?: string;
+}
+
+const DEFAULT_PACING: Required<EdPacing> = {
+  globalCooldown: 45_000,
+  reactionCooldown: 12_000,
+  idleThreshold: 180_000,
+  intervalMin: 240_000,
+  intervalMax: 540_000,
+  hypeChance: 0.25,
+  outputSettleMs: 700,
+  outputMaxWaitMs: 8_000,
+};
+
+// The Chattiness setting. "normal" is DEFAULT_PACING as-is.
+export const ED_CHATTINESS: Record<EdChattiness, EdPacing> = {
+  quiet: {
+    globalCooldown: 120_000,
+    reactionCooldown: 30_000,
+    idleThreshold: 600_000,
+    intervalMin: 900_000,
+    intervalMax: 1_800_000,
+    hypeChance: 0.1,
+  },
+  normal: {},
+  chatty: {
+    globalCooldown: 20_000,
+    reactionCooldown: 5_000,
+    idleThreshold: 90_000,
+    intervalMin: 90_000,
+    intervalMax: 240_000,
+    hypeChance: 0.5,
+  },
+};
+
+const PACING_KEYS = Object.keys(DEFAULT_PACING) as (keyof EdPacing)[];
+
+function resolvePacing(options: EdPacing): Required<EdPacing> {
+  const pacing = { ...DEFAULT_PACING };
+  for (const key of PACING_KEYS) pacing[key] = options[key] ?? DEFAULT_PACING[key];
+  return pacing;
 }
 
 type Timer = ReturnType<typeof setTimeout>;
@@ -21,15 +66,7 @@ type Timer = ReturnType<typeof setTimeout>;
 // popups, scoped to the DOM subtree passed in as `container`.
 export class EdEngine {
   private quotes: EdQuotes;
-
-  private globalCooldown: number;
-  private reactionCooldown: number;
-  private idleThreshold: number;
-  private intervalMin: number;
-  private intervalMax: number;
-  private hypeChance: number;
-  private outputSettleMs: number;
-  private outputMaxWaitMs: number;
+  private pacing: Required<EdPacing>;
 
   private lastSpokeAt = 0;
   private lastReactionAt = 0;
@@ -58,15 +95,7 @@ export class EdEngine {
   constructor(container: HTMLElement, quotes: EdQuotes, options: EdEngineOptions = {}) {
     this.container = container;
     this.quotes = quotes;
-
-    this.globalCooldown = options.globalCooldown ?? 45_000;
-    this.reactionCooldown = options.reactionCooldown ?? 12_000;
-    this.idleThreshold = options.idleThreshold ?? 180_000;
-    this.intervalMin = options.intervalMin ?? 240_000;
-    this.intervalMax = options.intervalMax ?? 540_000;
-    this.hypeChance = options.hypeChance ?? 0.25;
-    this.outputSettleMs = options.outputSettleMs ?? 700;
-    this.outputMaxWaitMs = options.outputMaxWaitMs ?? 8_000;
+    this.pacing = resolvePacing(options);
 
     this.bubble = container.querySelector('.ed-bubble')!;
     this.bubbleText = container.querySelector('.ed-bubble-text')!;
@@ -135,7 +164,7 @@ export class EdEngine {
 
   speak(text: string, { force = false } = {}): boolean {
     const now = Date.now();
-    if (!force && now - this.lastSpokeAt < this.globalCooldown) return false;
+    if (!force && now - this.lastSpokeAt < this.pacing.globalCooldown) return false;
     this.lastSpokeAt = now;
 
     // Ed strikes a new pose when he has something to say - except the
@@ -193,7 +222,18 @@ export class EdEngine {
       this.outputWindow = this.outputWindow.slice(-8000);
     }
     if (this.settleTimer) clearTimeout(this.settleTimer);
-    this.settleTimer = setTimeout(() => this.reactToCommand(), this.outputSettleMs);
+    this.settleTimer = setTimeout(() => this.reactToCommand(), this.pacing.outputSettleMs);
+  }
+
+  // Settings changed. Re-arms the idle and interval timers so a new pace
+  // takes effect now, not after a delay the old pace already scheduled.
+  updateOptions(options: EdPacing): void {
+    const pacing = resolvePacing(options);
+    if (PACING_KEYS.every((key) => pacing[key] === this.pacing[key])) return;
+    this.pacing = pacing;
+    if (!this.idleFired) this.resetIdleTimer();
+    if (this.intervalTimer) clearTimeout(this.intervalTimer);
+    this.scheduleIntervalRemark();
   }
 
   // Stops every pending timer - call when the tab this engine belongs to
@@ -222,7 +262,7 @@ export class EdEngine {
     const egg = this.findReaction(command);
     if (egg?.beforeFailure) {
       const now = Date.now();
-      if (now - this.lastReactionAt >= this.reactionCooldown) {
+      if (now - this.lastReactionAt >= this.pacing.reactionCooldown) {
         this.lastReactionAt = now;
         this.speak(this.pickFrom(egg.lines), { force: true });
       }
@@ -234,7 +274,7 @@ export class EdEngine {
     if (this.settleTimer) clearTimeout(this.settleTimer);
     if (this.maxWaitTimer) clearTimeout(this.maxWaitTimer);
     // Long-running command still producing output? React anyway at the cap.
-    this.maxWaitTimer = setTimeout(() => this.reactToCommand(), this.outputMaxWaitMs);
+    this.maxWaitTimer = setTimeout(() => this.reactToCommand(), this.pacing.outputMaxWaitMs);
   }
 
   private reactToCommand(): void {
@@ -247,7 +287,7 @@ export class EdEngine {
     if (!command) return;
 
     const now = Date.now();
-    if (now - this.lastReactionAt < this.reactionCooldown) return;
+    if (now - this.lastReactionAt < this.pacing.reactionCooldown) return;
 
     const specific = this.findReaction(command);
 
@@ -274,14 +314,14 @@ export class EdEngine {
       return;
     }
 
-    if (Math.random() < this.hypeChance) {
+    if (Math.random() < this.pacing.hypeChance) {
       if (this.speak(this.pick('hype'))) this.lastReactionAt = now;
     }
   }
 
   private scheduleIntervalRemark(): void {
-    const delay =
-      this.intervalMin + Math.random() * (this.intervalMax - this.intervalMin);
+    const { intervalMin, intervalMax } = this.pacing;
+    const delay = intervalMin + Math.random() * (intervalMax - intervalMin);
     this.intervalTimer = setTimeout(() => {
       // NCBD dominates the rotation on Wednesdays, cameos the rest of the week.
       const ncbdChance = new Date().getDay() === 3 ? 0.45 : 0.15;
@@ -304,6 +344,6 @@ export class EdEngine {
         this.idleFired = true;
         this.speak(this.pick('idleCheckins'));
       }
-    }, this.idleThreshold);
+    }, this.pacing.idleThreshold);
   }
 }

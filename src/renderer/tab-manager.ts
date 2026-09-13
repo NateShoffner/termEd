@@ -48,6 +48,9 @@ export interface TabManagerOptions {
   terminalOptions: ITerminalOptions;
   quotes: EdQuotes;
   edOptions: EdEngineOptions;
+  onOpenSettings: () => void;
+  /** +1 or -1 to step the font size, 0 to reset it. */
+  onFontSizeStep: (step: 1 | -1 | 0) => void;
 }
 
 // Owns one tab per open shell session. A tab is a PaneGroup (one pty + one
@@ -177,6 +180,21 @@ export class TabManager {
     if (this.activeId) void this.tabs.get(this.activeId)?.panes.split(dir);
   }
 
+  // Settings changes reach every open tab and pane, not just ones opened
+  // afterwards.
+  applyOptions(terminalOptions: ITerminalOptions, edOptions: EdEngineOptions): void {
+    this.opts.terminalOptions = terminalOptions;
+    this.opts.edOptions = edOptions;
+    for (const tab of this.tabs.values()) {
+      tab.panes.setTerminalOptions(terminalOptions);
+      tab.ed.updateOptions(edOptions);
+    }
+  }
+
+  focusActive(): void {
+    if (this.activeId) this.tabs.get(this.activeId)?.panes.focusActive();
+  }
+
   private tabFor(paneId: string): Tab | undefined {
     const tabId = this.paneOwner.get(paneId);
     return tabId ? this.tabs.get(tabId) : undefined;
@@ -230,6 +248,18 @@ export class TabManager {
     if (key === 'w') {
       event.preventDefault();
       this.closeTab(tabId);
+      return true;
+    }
+    if (key === ',') {
+      event.preventDefault();
+      this.opts.onOpenSettings();
+      return true;
+    }
+    // Zoom keys, same as browsers and Windows Terminal. Shifted combos bail
+    // out above, so Ctrl+_ (readline undo) still reaches the shell.
+    if (key === '=' || key === '+' || key === '-' || key === '0') {
+      event.preventDefault();
+      this.opts.onFontSizeStep(key === '-' ? -1 : key === '0' ? 0 : 1);
       return true;
     }
     return false;

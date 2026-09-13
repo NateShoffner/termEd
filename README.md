@@ -20,6 +20,7 @@ A fully functional terminal emulator built entirely around Ed - your personal hy
 - **Command reactions** - wins get celebrated, errors get encouragement.
 - **Ambient hype** - unprompted words of motivation every few minutes.
 - **Idle check-ins** - gone quiet? Ed checks on you.
+- **Settings** - open the `⌄` menu in the tab bar (or Ctrl/Cmd+,) for font, cursor, default shell, starting directory, Ed's chattiness, backdrop dim, and window size memory.
 - **About screen** - open the `⌄` menu in the tab bar for version, commit hash, and credits.
 - **Self-updating.** Packaged builds check GitHub Releases on launch and update in the background.
 
@@ -37,6 +38,8 @@ Ed speaks through an overlay bubble, never into the shell stream.
 | `Alt+Shift+D` | Split along the pane's longer axis |
 | `Alt+←/→/↑/↓` | Move focus between panes |
 | `Ctrl+Shift+W` | Close pane (closes the tab when it's the last one) |
+| `Ctrl/Cmd+,` | Settings |
+| `Ctrl/Cmd+=` / `-` / `0` | Bigger / smaller / reset font size |
 
 ## Installation
 
@@ -47,7 +50,7 @@ npm install
 npm start
 ```
 
-Set `TERMED_SHELL` to use a specific shell. `npm run demo` plays a scripted session with no real shell.
+Set `TERMED_SHELL` to use a specific shell (overrides the shell setting). `npm run demo` plays a scripted session with no real shell.
 
 ## Development
 
@@ -55,8 +58,12 @@ Electron + [xterm.js](https://xtermjs.org/) + [@lydell/node-pty](https://github.
 
 ```
 src/main.ts                    pty spawn, window, auto-updater, IPC
-src/preload.ts                 contextBridge (ptys, version/commit, external links)
-src/renderer/renderer.ts       boot: wires tabs (or demo) + tab bar menu + about overlay
+src/preload.ts                 contextBridge (ptys, settings, version/commit, external links)
+src/settings.ts                settings schema, defaults, validation (shared by main + renderer)
+src/settings-store.ts          settings.json / window-state.json persistence (main)
+src/shells.ts                  shell resolution and detection (main)
+src/renderer/renderer.ts       boot: wires tabs (or demo), settings, tab bar menu, about overlay
+src/renderer/settings-panel.ts the settings overlay form
 src/renderer/tab-manager.ts    one PaneGroup + EdEngine per open tab
 src/renderer/panes.ts          the split tree: one xterm + pty per pane
 src/renderer/ed-engine.ts      when Ed speaks, scoped to a single tab's DOM

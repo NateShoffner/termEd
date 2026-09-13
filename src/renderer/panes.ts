@@ -90,6 +90,19 @@ export class PaneGroup {
     for (const leaf of this.leaves.values()) this.fitLeaf(leaf);
   }
 
+  /** Settings changed: restyle every pane, and use the new options for future splits. */
+  setTerminalOptions(options: ITerminalOptions): void {
+    this.opts.terminalOptions = options;
+    for (const leaf of this.leaves.values()) {
+      leaf.term.options.fontFamily = options.fontFamily;
+      leaf.term.options.fontSize = options.fontSize;
+      leaf.term.options.cursorStyle = options.cursorStyle;
+    }
+    // A font change resizes the cells but not the pane element, so the
+    // ResizeObserver won't fire. Hidden tabs skip this and refit on activate.
+    this.fitAll();
+  }
+
   async split(dir: SplitDirection): Promise<void> {
     const target = this.active;
     if (!target) return;

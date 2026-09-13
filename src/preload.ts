@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
+import type { Settings } from './settings';
 
 const termedApi = {
   platform: process.platform,
@@ -27,6 +28,11 @@ const termedApi = {
   openExternal: (url: string): void => {
     ipcRenderer.send('app:open-external', url);
   },
+  getSettings: (): Promise<Settings> => ipcRenderer.invoke('settings:get'),
+  setSettings: (patch: Partial<Settings>): void => {
+    ipcRenderer.send('settings:set', patch);
+  },
+  detectShells: (): Promise<string[]> => ipcRenderer.invoke('settings:detect-shells'),
 };
 
 export type TermedApi = typeof termedApi;

@@ -4,22 +4,25 @@ import { WebglAddon } from '@xterm/addon-webgl';
 import { WebLinksAddon } from '@xterm/addon-web-links';
 import '@xterm/xterm/css/xterm.css';
 import { ED_QUOTES } from './ed-quotes';
-import { EdEngine, type EdEngineOptions } from './ed-engine';
+import { ED_CHATTINESS, EdEngine, type EdEngineOptions } from './ed-engine';
 import { runDemo } from './demo';
 import { TabManager, createSession } from './tab-manager';
 import { createPaneEl } from './panes';
+import { SettingsPanel } from './settings-panel';
 import { COMMIT_URL, CREDITS_URL } from '../links';
+import { DEFAULT_SETTINGS, sanitizeSettings, type Settings } from '../settings';
 
+// Nerd Font families come first so prompt themes (oh-my-posh, starship) get
+// their icon glyphs instead of tofu boxes. Nerd Fonts has shipped several
+// naming schemes over its versions; a family that isn't installed just falls
+// through to the next one.
+const DEFAULT_FONT_STACK =
+  "'CaskaydiaCove Nerd Font Mono', 'CaskaydiaCove NFM', 'CaskaydiaCove Nerd Font', 'CaskaydiaCove NF', 'Symbols Nerd Font Mono', 'Cascadia Mono', 'Cascadia Code', Consolas, 'Courier New', monospace";
+
+// Font family, size, and cursor style come from settings (terminalOptionsFor).
 const TERMINAL_OPTIONS: ITerminalOptions = {
   allowTransparency: true,
   cursorBlink: true,
-  // Nerd Font families come first so prompt themes (oh-my-posh, starship) get
-  // their icon glyphs instead of tofu boxes. Nerd Fonts has shipped several
-  // naming schemes over its versions; a family that isn't installed just
-  // falls through to the next one.
-  fontFamily:
-    "'CaskaydiaCove Nerd Font Mono', 'CaskaydiaCove NFM', 'CaskaydiaCove Nerd Font', 'CaskaydiaCove NF', 'Symbols Nerd Font Mono', 'Cascadia Mono', 'Cascadia Code', Consolas, 'Courier New', monospace",
-  fontSize: 15,
   lineHeight: 1.15,
   scrollback: 5000,
   theme: {
@@ -57,57 +60,109 @@ for (const photo of ED_PHOTOS) {
   img.decode().catch(() => {});
 }
 
-const edOptions: EdEngineOptions = {
-  photos: ED_PHOTOS,
-  platform: window.termed.platform,
-  // Demo pacing: reactions land close together, and the idle check-in fires
-  // shortly after the script ends (14s clears every mid-demo pause).
-  ...(window.termed.demo
-    ? { reactionCooldown: 2_500, globalCooldown: 4_000, idleThreshold: 14_000 }
-    : {}),
-};
+// A custom font goes in front of the built-in stack, so a typo or an
+// uninstalled font still lands on a monospace face.
+function fontStack(family: string): string {
+  if (!family) return DEFAULT_FONT_STACK;
+  const custom = /[,'"]/.test(family) ? family : `'${family}'`;
+  return `${custom}, ${DEFAULT_FONT_STACK}`;
+}
+
+function terminalOptionsFor(settings: Settings): ITerminalOptions {
+  return {
+    ...TERMINAL_OPTIONS,
+    fontFamily: fontStack(settings.fontFamily),
+    fontSize: settings.fontSize,
+    cursorStyle: settings.cursorStyle,
+  };
+}
+
+function edOptionsFor(settings: Settings): EdEngineOptions {
+  return {
+    photos: ED_PHOTOS,
+    platform: window.termed.platform,
+    // Demo pacing: reactions land close together, and the idle check-in fires
+    // shortly after the script ends (14s clears every mid-demo pause).
+    ...(window.termed.demo
+      ? { reactionCooldown: 2_500, globalCooldown: 4_000, idleThreshold: 14_000 }
+      : ED_CHATTINESS[settings.edChattiness]),
+  };
+}
+
+function applyAppearance(settings: Settings): void {
+  document.documentElement.style.setProperty('--pane-tint', String(settings.backdropDim / 100));
+}
 
 let tabManager: TabManager | null = null;
+let settingsPanel: SettingsPanel | null = null;
 
-if (window.termed.demo) {
-  // Scripted showcase: one fake, non-interactive tab, no real pty.
-  document.getElementById('ed-new-tab')!.style.display = 'none';
-  const demoTab = document.createElement('div');
-  demoTab.className = 'ed-tab active';
-  demoTab.textContent = 'Demo';
-  document.getElementById('ed-tablist')!.appendChild(demoTab);
+void window.termed.getSettings().then((initialSettings) => {
+  let settings = initialSettings;
+  applyAppearance(settings);
 
-  const { session, root } = createSession();
-  session.classList.add('active');
-  document.getElementById('terminal-panes')!.appendChild(session);
+  if (window.termed.demo) {
+    // Scripted showcase: one fake, non-interactive tab, no real pty.
+    document.getElementById('ed-new-tab')!.style.display = 'none';
+    const demoTab = document.createElement('div');
+    demoTab.className = 'ed-tab active';
+    demoTab.textContent = 'Demo';
+    document.getElementById('ed-tablist')!.appendChild(demoTab);
 
-  const pane = createPaneEl();
-  pane.classList.add('active-pane');
-  root.appendChild(pane);
+    const { session, root } = createSession();
+    session.classList.add('active');
+    document.getElementById('terminal-panes')!.appendChild(session);
 
-  const term = new Terminal(TERMINAL_OPTIONS);
-  const fitAddon = new FitAddon();
-  term.loadAddon(fitAddon);
-  term.loadAddon(new WebLinksAddon());
-  term.open(pane);
-  try {
-    const webgl = new WebglAddon();
-    webgl.onContextLoss(() => webgl.dispose());
-    term.loadAddon(webgl);
-  } catch (e) {
-    console.warn('WebGL renderer unavailable, using DOM renderer:', e);
+    const pane = createPaneEl();
+    pane.classList.add('active-pane');
+    root.appendChild(pane);
+
+    const term = new Terminal(terminalOptionsFor(settings));
+    const fitAddon = new FitAddon();
+    term.loadAddon(fitAddon);
+    term.loadAddon(new WebLinksAddon());
+    term.open(pane);
+    try {
+      const webgl = new WebglAddon();
+      webgl.onContextLoss(() => webgl.dispose());
+      term.loadAddon(webgl);
+    } catch (e) {
+      console.warn('WebGL renderer unavailable, using DOM renderer:', e);
+    }
+    fitAddon.fit();
+    term.focus();
+    window.addEventListener('resize', () => fitAddon.fit());
+
+    const ed = new EdEngine(session, ED_QUOTES, edOptionsFor(settings));
+    void runDemo(term, ed);
+    return;
   }
-  fitAddon.fit();
-  term.focus();
-  window.addEventListener('resize', () => fitAddon.fit());
 
-  const ed = new EdEngine(session, ED_QUOTES, edOptions);
-  void runDemo(term, ed);
-} else {
+  // Applied locally first (sanitized by the same rules main uses), then
+  // persisted, so rapid repeats like Ctrl+= build on each other instead of
+  // racing the IPC round trip.
+  const updateSettings = (patch: Partial<Settings>) => {
+    settings = sanitizeSettings({ ...settings, ...patch });
+    applyAppearance(settings);
+    tabManager?.applyOptions(terminalOptionsFor(settings), edOptionsFor(settings));
+    window.termed.setSettings(settings);
+  };
+
   tabManager = new TabManager({
-    terminalOptions: TERMINAL_OPTIONS,
+    terminalOptions: terminalOptionsFor(settings),
     quotes: ED_QUOTES,
-    edOptions,
+    edOptions: edOptionsFor(settings),
+    onOpenSettings: () => settingsPanel?.open(),
+    onFontSizeStep: (step) =>
+      updateSettings({
+        fontSize: step === 0 ? DEFAULT_SETTINGS.fontSize : settings.fontSize + step,
+      }),
+  });
+
+  settingsPanel = new SettingsPanel({
+    getSettings: () => settings,
+    update: updateSettings,
+    preview: (patch) => applyAppearance({ ...settings, ...patch }),
+    onClose: () => tabManager?.focusActive(),
   });
 
   document
@@ -115,7 +170,7 @@ if (window.termed.demo) {
     .addEventListener('click', () => void tabManager!.createTab());
 
   void tabManager.createTab();
-}
+});
 
 // Tab bar dropdown menu
 const menu = document.getElementById('ed-menu')!;
@@ -125,7 +180,7 @@ const closeMenu = () => menu.classList.add('hidden');
 // Demo mode has no tab manager, so only the About entry does anything.
 if (window.termed.demo) {
   for (const el of menu.querySelectorAll<HTMLElement>(
-    '[data-action="new-tab"], [data-action="split-row"], [data-action="split-column"], .ed-menu-sep'
+    '[data-action="new-tab"], [data-action="split-row"], [data-action="split-column"], [data-action="settings"], .ed-menu-sep'
   )) {
     el.style.display = 'none';
   }
@@ -147,6 +202,7 @@ menu.addEventListener('click', (e) => {
   if (action === 'new-tab') void tabManager?.createTab();
   else if (action === 'split-row') tabManager?.splitActive('row');
   else if (action === 'split-column') tabManager?.splitActive('column');
+  else if (action === 'settings') settingsPanel?.open();
   else if (action === 'about') openAbout();
 });
 

@@ -27,6 +27,7 @@
     <button type="button" data-action="split-row" role="menuitem">Split right<kbd>Alt+Shift++</kbd></button>
     <button type="button" data-action="split-column" role="menuitem">Split down<kbd>Alt+Shift+-</kbd></button>
     <div class="ed-menu-sep"></div>
+    <button type="button" data-action="settings" role="menuitem">Settings<kbd>Ctrl+,</kbd></button>
     <button type="button" data-action="about" role="menuitem">About termEd</button>
   </div>
   <!-- Each tab gets its own backdrop + bubble + terminal, appended here at
@@ -50,6 +51,82 @@
         Made by Nate Shoffner ·
         <a id="ed-about-link" href="https://nateshoffner.com">nateshoffner.com</a>
       </p>
+    </div>
+  </div>
+
+  <!-- Control names match Settings keys (src/settings.ts); see
+       settings-panel.ts for how they're read and saved. -->
+  <div id="ed-settings" class="hidden">
+    <div id="ed-settings-panel" role="dialog" aria-labelledby="ed-settings-title" tabindex="-1">
+      <button id="ed-settings-close" type="button" aria-label="Close">×</button>
+      <h1 id="ed-settings-title">Settings</h1>
+      <form id="ed-settings-form" autocomplete="off">
+        <section class="ed-settings-section">
+          <h2>Terminal</h2>
+          <label class="ed-field">
+            <span class="ed-field-label">Font family</span>
+            <input name="fontFamily" type="text" placeholder="Default (Cascadia Mono)" spellcheck="false" />
+          </label>
+          <label class="ed-field">
+            <span class="ed-field-label">Font size</span>
+            <input name="fontSize" type="number" step="1" />
+          </label>
+          <p class="ed-field-hint">Also Ctrl+= and Ctrl+- in the terminal, Ctrl+0 to reset.</p>
+          <label class="ed-field">
+            <span class="ed-field-label">Cursor style</span>
+            <select name="cursorStyle">
+              <option value="block">Block</option>
+              <option value="bar">Bar</option>
+              <option value="underline">Underline</option>
+            </select>
+          </label>
+        </section>
+
+        <section class="ed-settings-section">
+          <h2>Shell</h2>
+          <label class="ed-field">
+            <span class="ed-field-label">Default shell</span>
+            <input name="shell" type="text" list="ed-shell-list" placeholder="Auto-detect" spellcheck="false" />
+          </label>
+          <datalist id="ed-shell-list"></datalist>
+          <label class="ed-field">
+            <span class="ed-field-label">Starting directory</span>
+            <input name="startingDirectory" type="text" placeholder="Home folder" spellcheck="false" />
+          </label>
+          <p class="ed-field-hint">Shell settings apply to new tabs and panes.</p>
+        </section>
+
+        <section class="ed-settings-section">
+          <h2>Ed</h2>
+          <label class="ed-field">
+            <span class="ed-field-label">Chattiness</span>
+            <select name="edChattiness">
+              <option value="quiet">Quiet</option>
+              <option value="normal">Normal</option>
+              <option value="chatty">Chatty</option>
+            </select>
+          </label>
+        </section>
+
+        <section class="ed-settings-section">
+          <h2>Appearance</h2>
+          <label class="ed-field">
+            <span class="ed-field-label">Backdrop dim</span>
+            <span class="ed-range">
+              <input name="backdropDim" type="range" min="0" step="5" />
+              <output id="ed-settings-dim-value"></output>
+            </span>
+          </label>
+        </section>
+
+        <section class="ed-settings-section">
+          <h2>Window</h2>
+          <label class="ed-check">
+            <input name="rememberWindowBounds" type="checkbox" />
+            <span>Remember window size and position</span>
+          </label>
+        </section>
+      </form>
     </div>
   </div>
 

@@ -1,12 +1,19 @@
-import { app, BrowserWindow, ipcMain, shell } from 'electron';
+import { app, BrowserWindow, ipcMain, screen, shell } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import * as path from 'path';
 import * as os from 'os';
 import * as fs from 'fs';
-import { execFileSync } from 'child_process';
 import * as pty from '@lydell/node-pty';
 import { getMotd } from './motd';
 import { COMMIT_URL, CREDITS_URL } from './links';
+import { detectShells, resolveShell } from './shells';
+import {
+  getSettings,
+  loadWindowState,
+  saveWindowState,
+  updateSettings,
+  type WindowState,
+} from './settings-store';
 
 // Must run before the app is ready to affect the About panel, notifications,
 // and userData folder naming. Doesn't rename the dev-mode process itself -
@@ -19,23 +26,31 @@ app.setName('termEd');
 if (process.argv.includes('--demo')) process.env.TERMED_DEMO = '1';
 const isDemo = process.env.TERMED_DEMO === '1';
 
-function resolveShell(): string {
-  if (process.env.TERMED_SHELL) return process.env.TERMED_SHELL;
-  if (process.platform === 'win32') {
-    try {
-      execFileSync('where.exe', ['pwsh.exe'], { stdio: 'ignore' });
-      return 'pwsh.exe';
-    } catch {
-      return 'powershell.exe';
-    }
-  }
-  return process.env.SHELL || '/bin/bash';
+function restoredWindowState(): WindowState | null {
+  if (!getSettings().rememberWindowBounds) return null;
+  const state = loadWindowState();
+  if (!state) return null;
+  // Bounds saved on a monitor that's since been unplugged would open the
+  // window offscreen - fall back to the default centered size instead.
+  const onScreen = screen
+    .getAllDisplays()
+    .some(
+      ({ workArea: area }) =>
+        state.x < area.x + area.width &&
+        state.x + state.width > area.x &&
+        state.y < area.y + area.height &&
+        state.y + state.height > area.y
+    );
+  return onScreen ? state : null;
 }
 
 function createWindow(): void {
+  const restored = restoredWindowState();
   const win = new BrowserWindow({
-    width: 1100,
-    height: 720,
+    width: restored?.width ?? 1100,
+    height: restored?.height ?? 720,
+    x: restored?.x,
+    y: restored?.y,
     minWidth: 480,
     minHeight: 320,
     title: 'termEd',
@@ -52,6 +67,26 @@ function createWindow(): void {
       nodeIntegration: false,
     },
   });
+
+  // Tracked as it changes instead of read at close: a renderer-initiated
+  // window.close() (the last tab's shell exiting) skips the 'close' event, and
+  // by 'closed' the window can't report its bounds anymore. Always saved, so
+  // turning "remember window size" on later picks up the latest bounds.
+  const captureState = (): WindowState => ({
+    ...win.getNormalBounds(),
+    maximized: win.isMaximized(),
+  });
+  let windowState = captureState();
+  const trackState = () => {
+    windowState = captureState();
+  };
+  win.on('resize', trackState);
+  win.on('move', trackState);
+  win.on('maximize', trackState);
+  win.on('unmaximize', trackState);
+  win.on('closed', () => saveWindowState(windowState));
+
+  if (restored?.maximized) win.maximize();
 
   win.removeMenu();
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
@@ -88,8 +123,22 @@ function createWindow(): void {
   }
 }
 
+// Accepts absolute paths and ~ (home-relative). Anything else, including a
+// folder that no longer exists, opens in the home folder.
+function resolveStartingDirectory(dir: string): string {
+  const home = os.homedir();
+  const expanded = /^~([\\/]|$)/.test(dir) ? path.join(home, dir.slice(1)) : dir;
+  if (!expanded || !path.isAbsolute(expanded)) return home;
+  try {
+    return fs.statSync(expanded).isDirectory() ? expanded : home;
+  } catch {
+    return home;
+  }
+}
+
 function spawnPanePty(win: BrowserWindow, paneId: string): pty.IPty {
-  const shellPath = resolveShell();
+  const settings = getSettings();
+  const shellPath = resolveShell(settings.shell);
   // The MOTD prints via the shell itself - ConPTY repaints the whole viewport
   // at startup, so anything written straight to xterm gets wiped.
   const psQuote = (s: string) => `'${s.replace(/'/g, "''")}'`;
@@ -105,7 +154,7 @@ function spawnPanePty(win: BrowserWindow, paneId: string): pty.IPty {
     name: 'xterm-256color',
     cols: 80,
     rows: 24,
-    cwd: os.homedir(),
+    cwd: resolveStartingDirectory(settings.startingDirectory),
     env: { ...process.env, TERMED: '1' } as Record<string, string>,
   });
 
@@ -196,6 +245,14 @@ const ALLOWED_EXTERNAL_URLS = new Set([CREDITS_URL, COMMIT_URL]);
 ipcMain.on('app:open-external', (_event, url: string) => {
   if (ALLOWED_EXTERNAL_URLS.has(url)) shell.openExternal(url);
 });
+
+// The renderer applies changes locally as it sends them; main just persists
+// (sanitized) and reads shell/cwd/window settings back when it needs them.
+ipcMain.handle('settings:get', () => getSettings());
+ipcMain.on('settings:set', (_event, patch: unknown) => {
+  updateSettings(patch);
+});
+ipcMain.handle('settings:detect-shells', () => detectShells());
 
 app.whenReady().then(() => {
   // macOS ignores the BrowserWindow icon option; packaged builds use the
