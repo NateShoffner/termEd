@@ -1,4 +1,5 @@
 import { BACKDROP_DIM_MAX, FONT_SIZE_MAX, FONT_SIZE_MIN, type Settings } from '../settings';
+import { fontStack, listInstalledFonts, type InstalledFonts } from './fonts';
 
 export interface SettingsPanelOptions {
   getSettings: () => Settings;
@@ -11,13 +12,24 @@ export interface SettingsPanelOptions {
 
 type Field = HTMLInputElement | HTMLSelectElement;
 
+function option(value: string, label: string): HTMLOptionElement {
+  const el = document.createElement('option');
+  el.value = value;
+  el.textContent = label;
+  return el;
+}
+
 // The settings overlay. Form controls are named after Settings keys, and each
 // one saves as soon as it changes - there's no Save button.
 export class SettingsPanel {
   private overlay = document.getElementById('ed-settings')!;
   private panel = document.getElementById('ed-settings-panel')!;
   private form = document.getElementById('ed-settings-form') as HTMLFormElement;
+  private fontSelect = this.form.elements.namedItem('fontFamily') as HTMLSelectElement;
+  private fontPreview = document.getElementById('ed-settings-font-preview')!;
+  private showAllFonts = document.getElementById('ed-settings-all-fonts') as HTMLInputElement;
   private dimValue = document.getElementById('ed-settings-dim-value')!;
+  private fonts: InstalledFonts = { all: [], monospace: [] };
   private shellsLoaded = false;
 
   constructor(private opts: SettingsPanelOptions) {
@@ -41,6 +53,8 @@ export class SettingsPanel {
       if (patch) this.opts.preview(patch);
       this.dimValue.textContent = `${backdropDim.value}%`;
     });
+    // Not a setting (no name), just a filter on the font list.
+    this.showAllFonts.addEventListener('change', () => this.renderFontOptions());
 
     document.getElementById('ed-settings-close')!.addEventListener('click', () => this.close());
     this.overlay.addEventListener('click', (e) => {
@@ -61,6 +75,7 @@ export class SettingsPanel {
     // Pull focus off the terminal so keystrokes stop reaching the shell.
     this.panel.focus();
     void this.loadShells();
+    void this.loadFonts();
   }
 
   close(): void {
@@ -100,7 +115,42 @@ export class SettingsPanel {
         field.value = String(value);
       }
     }
+    this.syncFontSelect(settings.fontFamily);
     this.dimValue.textContent = `${settings.backdropDim}%`;
+  }
+
+  // Runs on every open: the list itself is cached in fonts.ts, but a failed
+  // lookup isn't, so this is also the retry.
+  private async loadFonts(): Promise<void> {
+    this.fonts = await listInstalledFonts();
+    this.renderFontOptions();
+  }
+
+  // Monospace families only unless "show all" is checked: a proportional font
+  // misaligns every column in a terminal.
+  private renderFontOptions(): void {
+    const families = this.showAllFonts.checked ? this.fonts.all : this.fonts.monospace;
+    this.fontSelect.replaceChildren(
+      option('', 'Default (Cascadia Mono)'),
+      ...families.map((family) => option(family, family))
+    );
+    this.syncFontSelect(this.opts.getSettings().fontFamily);
+  }
+
+  private syncFontSelect(current: string): void {
+    // A saved font missing from the list (uninstalled, or proportional while
+    // "show all" is off) still gets an entry, so opening settings never
+    // silently swaps it for something else.
+    const stale = this.fontSelect.querySelector<HTMLOptionElement>('option[data-unlisted]');
+    if (stale && stale.value !== current) stale.remove();
+    if (![...this.fontSelect.options].some((o) => o.value === current)) {
+      const missing = this.fonts.all.length > 0 && !this.fonts.all.includes(current);
+      const extra = option(current, missing ? `${current} (not installed)` : current);
+      extra.dataset.unlisted = '';
+      this.fontSelect.append(extra);
+    }
+    this.fontSelect.value = current;
+    this.fontPreview.style.fontFamily = fontStack(current);
   }
 
   private async loadShells(): Promise<void> {

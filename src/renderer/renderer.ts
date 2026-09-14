@@ -9,15 +9,9 @@ import { runDemo } from './demo';
 import { TabManager, createSession } from './tab-manager';
 import { createPaneEl } from './panes';
 import { SettingsPanel } from './settings-panel';
+import { fontStack } from './fonts';
 import { COMMIT_URL, CREDITS_URL } from '../links';
 import { DEFAULT_SETTINGS, sanitizeSettings, type Settings } from '../settings';
-
-// Nerd Font families come first so prompt themes (oh-my-posh, starship) get
-// their icon glyphs instead of tofu boxes. Nerd Fonts has shipped several
-// naming schemes over its versions; a family that isn't installed just falls
-// through to the next one.
-const DEFAULT_FONT_STACK =
-  "'CaskaydiaCove Nerd Font Mono', 'CaskaydiaCove NFM', 'CaskaydiaCove Nerd Font', 'CaskaydiaCove NF', 'Symbols Nerd Font Mono', 'Cascadia Mono', 'Cascadia Code', Consolas, 'Courier New', monospace";
 
 // Font family, size, and cursor style come from settings (terminalOptionsFor).
 const TERMINAL_OPTIONS: ITerminalOptions = {
@@ -58,14 +52,6 @@ for (const photo of ED_PHOTOS) {
   const img = new Image();
   img.src = photo;
   img.decode().catch(() => {});
-}
-
-// A custom font goes in front of the built-in stack, so a typo or an
-// uninstalled font still lands on a monospace face.
-function fontStack(family: string): string {
-  if (!family) return DEFAULT_FONT_STACK;
-  const custom = /[,'"]/.test(family) ? family : `'${family}'`;
-  return `${custom}, ${DEFAULT_FONT_STACK}`;
 }
 
 function terminalOptionsFor(settings: Settings): ITerminalOptions {

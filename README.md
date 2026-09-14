@@ -64,6 +64,7 @@ src/settings-store.ts          settings.json / window-state.json persistence (ma
 src/shells.ts                  shell resolution and detection (main)
 src/renderer/renderer.ts       boot: wires tabs (or demo), settings, tab bar menu, about overlay
 src/renderer/settings-panel.ts the settings overlay form
+src/renderer/fonts.ts          installed font list (for the picker) + default font stack
 src/renderer/tab-manager.ts    one PaneGroup + EdEngine per open tab
 src/renderer/panes.ts          the split tree: one xterm + pty per pane
 src/renderer/ed-engine.ts      when Ed speaks, scoped to a single tab's DOM

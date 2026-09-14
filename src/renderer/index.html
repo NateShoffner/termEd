@@ -65,7 +65,14 @@
           <h2>Terminal</h2>
           <label class="ed-field">
             <span class="ed-field-label">Font family</span>
-            <input name="fontFamily" type="text" placeholder="Default (Cascadia Mono)" spellcheck="false" />
+            <select name="fontFamily">
+              <option value="">Default (Cascadia Mono)</option>
+            </select>
+          </label>
+          <div id="ed-settings-font-preview" class="ed-font-preview">The quick brown fox 0O 1lI {} =&gt;</div>
+          <label class="ed-check ed-field-indent">
+            <input id="ed-settings-all-fonts" type="checkbox" />
+            <span>Show all fonts, not just monospace</span>
           </label>
           <label class="ed-field">
             <span class="ed-field-label">Font size</span>

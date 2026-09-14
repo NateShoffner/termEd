@@ -646,6 +646,24 @@ img {
   color: #7a829e;
 }
 
+/* Sample text in the selected font, under the font picker. */
+.ed-font-preview {
+  margin: -2px 0 8px 142px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: rgba(9, 10, 16, 0.6);
+  font-size: 14px;
+  color: #e6e9f2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ed-check.ed-field-indent {
+  margin: 0 0 10px 142px;
+  font-size: 12px;
+}
+
 .ed-check {
   display: flex;
   align-items: center;
