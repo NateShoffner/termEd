@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { Settings } from './settings';
+import type { UpdateState } from './updates';
 
 const termedApi = {
   platform: process.platform,
@@ -33,6 +34,16 @@ const termedApi = {
     ipcRenderer.send('settings:set', patch);
   },
   detectShells: (): Promise<string[]> => ipcRenderer.invoke('settings:detect-shells'),
+  getUpdateState: (): Promise<UpdateState> => ipcRenderer.invoke('updates:get-state'),
+  onUpdateState: (callback: (state: UpdateState) => void): void => {
+    ipcRenderer.on('updates:state', (_event, state: UpdateState) => callback(state));
+  },
+  checkForUpdates: (): void => {
+    ipcRenderer.send('updates:check');
+  },
+  installUpdate: (): void => {
+    ipcRenderer.send('updates:install');
+  },
 };
 
 export type TermedApi = typeof termedApi;

@@ -28,6 +28,8 @@
     <button type="button" data-action="split-column" role="menuitem">Split down<kbd>Alt+Shift+-</kbd></button>
     <div class="ed-menu-sep"></div>
     <button type="button" data-action="settings" role="menuitem">Settings<kbd>Ctrl+,</kbd></button>
+    <!-- Shown by update-ui.ts only while an update is waiting. -->
+    <button type="button" data-action="update" role="menuitem" hidden></button>
     <button type="button" data-action="about" role="menuitem">About termEd</button>
   </div>
   <!-- Each tab gets its own backdrop + bubble + terminal, appended here at
@@ -47,6 +49,10 @@
         <dt>Commit</dt>
         <dd id="ed-about-commit"></dd>
       </dl>
+      <div id="ed-about-update">
+        <span id="ed-about-update-status"></span>
+        <button id="ed-about-update-action" type="button" hidden></button>
+      </div>
       <p id="ed-about-credits">
         Made by Nate Shoffner ·
         <a id="ed-about-link" href="https://nateshoffner.com">nateshoffner.com</a>
@@ -131,6 +137,14 @@
           <label class="ed-check">
             <input name="rememberWindowBounds" type="checkbox" />
             <span>Remember window size and position</span>
+          </label>
+        </section>
+
+        <section class="ed-settings-section">
+          <h2>Updates</h2>
+          <label class="ed-check">
+            <input name="autoCheckUpdates" type="checkbox" />
+            <span>Check for updates automatically</span>
           </label>
         </section>
       </form>

@@ -259,6 +259,28 @@ img {
   background: rgba(255, 255, 255, 0.08);
 }
 
+/* The hidden attribute has to beat the display: flex above. */
+#ed-menu button[hidden] {
+  display: none;
+}
+
+/* Dot on the menu button while an update is waiting in the menu. Kept in the
+   corner, clear of the chevron: any closer and the two read as a checkmark. */
+#ed-tab-menu.has-update {
+  position: relative;
+}
+
+#ed-tab-menu.has-update::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #6fc3ff;
+}
+
 /* Pane tree. Sessions span the full viewport (so the backdrop bleeds behind
    the tab bar); this root offsets the actual terminals below it. */
 .pane-root {
@@ -533,6 +555,35 @@ img {
   text-align: left;
   font-family: 'Cascadia Mono', Consolas, 'Courier New', monospace;
   color: #eef2ff;
+}
+
+/* Update status: a line of text plus, when there's something to do, a button. */
+#ed-about-update {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+  font-size: 12px;
+  color: #9aa3c0;
+}
+
+#ed-about-update-status:empty {
+  display: none;
+}
+
+#ed-about-update-action {
+  padding: 5px 12px;
+  border: 1px solid rgba(120, 200, 255, 0.3);
+  border-radius: 6px;
+  background: rgba(120, 200, 255, 0.08);
+  color: #eef2ff;
+  font: inherit;
+  cursor: pointer;
+}
+
+#ed-about-update-action:hover {
+  background: rgba(120, 200, 255, 0.18);
 }
 
 #ed-about-credits {

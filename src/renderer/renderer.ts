@@ -10,6 +10,7 @@ import { TabManager, createSession } from './tab-manager';
 import { createPaneEl } from './panes';
 import { SettingsPanel } from './settings-panel';
 import { fontStack } from './fonts';
+import { initUpdateUi } from './update-ui';
 import { COMMIT_URL, CREDITS_URL } from '../links';
 import { DEFAULT_SETTINGS, sanitizeSettings, type Settings } from '../settings';
 
@@ -162,6 +163,7 @@ void window.termed.getSettings().then((initialSettings) => {
 const menu = document.getElementById('ed-menu')!;
 const menuButton = document.getElementById('ed-tab-menu')!;
 const closeMenu = () => menu.classList.add('hidden');
+const runUpdateAction = initUpdateUi();
 
 // Demo mode has no tab manager, so only the About entry does anything.
 if (window.termed.demo) {
@@ -189,6 +191,7 @@ menu.addEventListener('click', (e) => {
   else if (action === 'split-row') tabManager?.splitActive('row');
   else if (action === 'split-column') tabManager?.splitActive('column');
   else if (action === 'settings') settingsPanel?.open();
+  else if (action === 'update') runUpdateAction();
   else if (action === 'about') openAbout();
 });
 

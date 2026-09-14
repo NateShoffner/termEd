@@ -1,12 +1,12 @@
 import { app, BrowserWindow, ipcMain, screen, shell } from 'electron';
-import { autoUpdater } from 'electron-updater';
 import * as path from 'path';
 import * as os from 'os';
 import * as fs from 'fs';
 import * as pty from '@lydell/node-pty';
 import { getMotd } from './motd';
-import { COMMIT_URL, CREDITS_URL } from './links';
+import { COMMIT_URL, CREDITS_URL, RELEASES_URL } from './links';
 import { detectShells, resolveShell } from './shells';
+import { checkForUpdates, getUpdateState, initUpdater, installUpdate } from './updater';
 import {
   getSettings,
   loadWindowState,
@@ -239,8 +239,8 @@ function attachTabs(win: BrowserWindow): void {
 app.setAppUserModelId('dev.nateshoffner.termed');
 
 // Fixed allowlist, not arbitrary renderer-controlled navigation - this is
-// only ever called with the About screen's credits and commit links.
-const ALLOWED_EXTERNAL_URLS = new Set([CREDITS_URL, COMMIT_URL]);
+// only ever called with the About screen's credits, commit, and release links.
+const ALLOWED_EXTERNAL_URLS = new Set([CREDITS_URL, COMMIT_URL, RELEASES_URL]);
 
 ipcMain.on('app:open-external', (_event, url: string) => {
   if (ALLOWED_EXTERNAL_URLS.has(url)) shell.openExternal(url);
@@ -254,6 +254,12 @@ ipcMain.on('settings:set', (_event, patch: unknown) => {
 });
 ipcMain.handle('settings:detect-shells', () => detectShells());
 
+// Main owns update state (see updater.ts); the renderer fetches it once, then
+// follows 'updates:state' pushes.
+ipcMain.handle('updates:get-state', () => getUpdateState());
+ipcMain.on('updates:check', () => checkForUpdates());
+ipcMain.on('updates:install', () => installUpdate());
+
 app.whenReady().then(() => {
   // macOS ignores the BrowserWindow icon option; packaged builds use the
   // bundle's icns, but dev (npm start) needs the dock icon set directly.
@@ -265,13 +271,7 @@ app.whenReady().then(() => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
 
-  // Update metadata only exists on installed builds (electron-builder emits
-  // it alongside the artifacts our GitHub Actions release step publishes) -
-  // an unpacked dev run has nothing to check against.
-  if (app.isPackaged) {
-    autoUpdater.on('error', (err) => console.error('autoUpdater error:', err));
-    autoUpdater.checkForUpdatesAndNotify();
-  }
+  initUpdater(() => getSettings().autoCheckUpdates);
 });
 
 app.on('window-all-closed', () => {

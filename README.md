@@ -21,8 +21,8 @@ A fully functional terminal emulator built entirely around Ed - your personal hy
 - **Ambient hype** - unprompted words of motivation every few minutes.
 - **Idle check-ins** - gone quiet? Ed checks on you.
 - **Settings** - open the `⌄` menu in the tab bar (or Ctrl/Cmd+,) for font, cursor, default shell, starting directory, Ed's chattiness, backdrop dim, and window size memory.
-- **About screen** - open the `⌄` menu in the tab bar for version, commit hash, and credits.
-- **Self-updating.** Packaged builds check GitHub Releases on launch and update in the background.
+- **About screen** - open the `⌄` menu in the tab bar for version, commit hash, update status, and credits.
+- **Self-updating.** Installed builds check GitHub Releases on launch and every few hours, download in the background, and offer "Restart to update" from the `⌄` menu. Check manually from the About screen, or turn automatic checks off in Settings. macOS and portable builds link to the release page instead of installing.
 
 Ed speaks through an overlay bubble, never into the shell stream.
 
@@ -62,9 +62,11 @@ src/preload.ts                 contextBridge (ptys, settings, version/commit, ex
 src/settings.ts                settings schema, defaults, validation (shared by main + renderer)
 src/settings-store.ts          settings.json / window-state.json persistence (main)
 src/shells.ts                  shell resolution and detection (main)
+src/updater.ts                 update checks, downloads, and install (main)
 src/renderer/renderer.ts       boot: wires tabs (or demo), settings, tab bar menu, about overlay
 src/renderer/settings-panel.ts the settings overlay form
 src/renderer/fonts.ts          installed font list (for the picker) + default font stack
+src/renderer/update-ui.ts      update status in the About screen and tab bar menu
 src/renderer/tab-manager.ts    one PaneGroup + EdEngine per open tab
 src/renderer/panes.ts          the split tree: one xterm + pty per pane
 src/renderer/ed-engine.ts      when Ed speaks, scoped to a single tab's DOM

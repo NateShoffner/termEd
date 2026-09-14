@@ -25,6 +25,8 @@ export interface Settings {
   /** Opacity of the tint behind the terminal text, in percent. */
   backdropDim: number;
   rememberWindowBounds: boolean;
+  /** Installed builds only: check on startup and every few hours. */
+  autoCheckUpdates: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -36,6 +38,7 @@ export const DEFAULT_SETTINGS: Settings = {
   edChattiness: 'normal',
   backdropDim: 45,
   rememberWindowBounds: true,
+  autoCheckUpdates: true,
 };
 
 const text = (value: unknown, fallback: string): string =>
@@ -53,6 +56,9 @@ const integer = (value: unknown, min: number, max: number, fallback: number): nu
 const oneOf = <T extends string>(value: unknown, allowed: readonly T[], fallback: T): T =>
   allowed.includes(value as T) ? (value as T) : fallback;
 
+const flag = (value: unknown, fallback: boolean): boolean =>
+  typeof value === 'boolean' ? value : fallback;
+
 // Settings arrive from disk and over IPC, so every field is validated rather
 // than trusted. Unknown keys are dropped; bad values fall back to defaults.
 export function sanitizeSettings(raw: unknown): Settings {
@@ -66,9 +72,7 @@ export function sanitizeSettings(raw: unknown): Settings {
     startingDirectory: pathText(input.startingDirectory, d.startingDirectory),
     edChattiness: oneOf(input.edChattiness, ED_CHATTINESS_LEVELS, d.edChattiness),
     backdropDim: integer(input.backdropDim, 0, BACKDROP_DIM_MAX, d.backdropDim),
-    rememberWindowBounds:
-      typeof input.rememberWindowBounds === 'boolean'
-        ? input.rememberWindowBounds
-        : d.rememberWindowBounds,
+    rememberWindowBounds: flag(input.rememberWindowBounds, d.rememberWindowBounds),
+    autoCheckUpdates: flag(input.autoCheckUpdates, d.autoCheckUpdates),
   };
 }
