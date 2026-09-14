@@ -49,7 +49,8 @@ A tab is a `PaneGroup` (a binary split tree of terminals) plus a single Ed. The 
 - The font picker lists installed families from `window.queryLocalFonts()` (Local Font Access API; Electron grants it on `file://` with no prompt or user gesture) and filters to monospace by comparing canvas glyph widths (`src/renderer/fonts.ts`). A saved font that isn't in the current list still gets its own entry, so opening settings never silently changes it.
 - `TERMED_SHELL` still overrides the shell setting. A saved shell that can't be found on PATH falls back to auto-detect (`src/shells.ts`).
 - Window bounds live in a separate `window-state.json`. They're tracked on resize/move and written on `closed`, not read in `close`: a renderer-initiated `window.close()` (the last pane's shell exiting) skips the `close` event entirely.
-- Adding a setting: extend `Settings`/`DEFAULT_SETTINGS`/`sanitizeSettings`, add a control to `#ed-settings-form` in `index.html` whose `name` matches the key (the panel reads and fills controls by name), then apply it in `renderer.ts` or read it in main.
+- The panel is tabbed (General / Appearance / Ed), following the WAI-ARIA tabs pattern: arrow keys switch tabs, only the selected tab is in the Tab order. All pages share one grid cell and inactive ones are `visibility: hidden`, so the panel keeps the tallest page's height and hidden controls stay out of the focus order. Switching that to `display: none` would bring back a height jump on every tab change.
+- Adding a setting: extend `Settings`/`DEFAULT_SETTINGS`/`sanitizeSettings`, add a control to the right `.ed-settings-page` inside `#ed-settings-form` in `index.html` whose `name` matches the key (the panel reads and fills controls by name, whichever page they're on), then apply it in `renderer.ts` or read it in main.
 
 ### Styling gotchas worth knowing before touching `styles.css`
 

@@ -626,6 +626,57 @@ img {
   font-weight: 700;
 }
 
+.ed-settings-tabs {
+  display: flex;
+  gap: 4px;
+  margin-top: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ed-settings-tab {
+  margin-bottom: -1px;
+  padding: 7px 12px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: #9aa3c0;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: color 0.12s ease, border-color 0.12s ease;
+}
+
+.ed-settings-tab:hover {
+  color: #eef2ff;
+}
+
+.ed-settings-tab[aria-selected='true'] {
+  color: #eef2ff;
+  border-bottom-color: #6fc3ff;
+}
+
+.ed-settings-tab:focus-visible {
+  outline: 1px solid rgba(111, 195, 255, 0.6);
+  outline-offset: -1px;
+  border-radius: 4px 4px 0 0;
+}
+
+/* Every page shares one grid cell, so the panel is always as tall as the
+   tallest page and doesn't jump when switching tabs. Inactive pages use
+   visibility rather than display, which also keeps their controls out of the
+   focus order. */
+.ed-settings-pages {
+  display: grid;
+}
+
+.ed-settings-page {
+  grid-area: 1 / 1;
+}
+
+.ed-settings-page:not(.active) {
+  visibility: hidden;
+}
+
 .ed-settings-section h2 {
   margin: 18px 0 10px;
   font-size: 11px;

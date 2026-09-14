@@ -66,87 +66,99 @@
     <div id="ed-settings-panel" role="dialog" aria-labelledby="ed-settings-title" tabindex="-1">
       <button id="ed-settings-close" type="button" aria-label="Close">×</button>
       <h1 id="ed-settings-title">Settings</h1>
-      <form id="ed-settings-form" autocomplete="off">
-        <section class="ed-settings-section">
-          <h2>Terminal</h2>
-          <label class="ed-field">
-            <span class="ed-field-label">Font family</span>
-            <select name="fontFamily">
-              <option value="">Default (Cascadia Mono)</option>
-            </select>
-          </label>
-          <div id="ed-settings-font-preview" class="ed-font-preview">The quick brown fox 0O 1lI {} =&gt;</div>
-          <label class="ed-check ed-field-indent">
-            <input id="ed-settings-all-fonts" type="checkbox" />
-            <span>Show all fonts, not just monospace</span>
-          </label>
-          <label class="ed-field">
-            <span class="ed-field-label">Font size</span>
-            <input name="fontSize" type="number" step="1" />
-          </label>
-          <p class="ed-field-hint">Also Ctrl+= and Ctrl+- in the terminal, Ctrl+0 to reset.</p>
-          <label class="ed-field">
-            <span class="ed-field-label">Cursor style</span>
-            <select name="cursorStyle">
-              <option value="block">Block</option>
-              <option value="bar">Bar</option>
-              <option value="underline">Underline</option>
-            </select>
-          </label>
-        </section>
+      <div class="ed-settings-tabs" role="tablist" aria-labelledby="ed-settings-title">
+        <button id="ed-settings-tab-general" class="ed-settings-tab" type="button" role="tab" aria-controls="ed-settings-page-general" data-page="general">General</button>
+        <button id="ed-settings-tab-appearance" class="ed-settings-tab" type="button" role="tab" aria-controls="ed-settings-page-appearance" data-page="appearance">Appearance</button>
+        <button id="ed-settings-tab-ed" class="ed-settings-tab" type="button" role="tab" aria-controls="ed-settings-page-ed" data-page="ed">Ed</button>
+      </div>
+      <form id="ed-settings-form" class="ed-settings-pages" autocomplete="off">
+        <div id="ed-settings-page-general" class="ed-settings-page" role="tabpanel" aria-labelledby="ed-settings-tab-general" data-page="general">
+          <section class="ed-settings-section">
+            <h2>Shell</h2>
+            <label class="ed-field">
+              <span class="ed-field-label">Default shell</span>
+              <input name="shell" type="text" list="ed-shell-list" placeholder="Auto-detect" spellcheck="false" />
+            </label>
+            <datalist id="ed-shell-list"></datalist>
+            <label class="ed-field">
+              <span class="ed-field-label">Starting directory</span>
+              <input name="startingDirectory" type="text" placeholder="Home folder" spellcheck="false" />
+            </label>
+            <p class="ed-field-hint">Shell settings apply to new tabs and panes.</p>
+          </section>
 
-        <section class="ed-settings-section">
-          <h2>Shell</h2>
-          <label class="ed-field">
-            <span class="ed-field-label">Default shell</span>
-            <input name="shell" type="text" list="ed-shell-list" placeholder="Auto-detect" spellcheck="false" />
-          </label>
-          <datalist id="ed-shell-list"></datalist>
-          <label class="ed-field">
-            <span class="ed-field-label">Starting directory</span>
-            <input name="startingDirectory" type="text" placeholder="Home folder" spellcheck="false" />
-          </label>
-          <p class="ed-field-hint">Shell settings apply to new tabs and panes.</p>
-        </section>
+          <section class="ed-settings-section">
+            <h2>Window</h2>
+            <label class="ed-check">
+              <input name="rememberWindowBounds" type="checkbox" />
+              <span>Remember window size and position</span>
+            </label>
+          </section>
 
-        <section class="ed-settings-section">
-          <h2>Ed</h2>
-          <label class="ed-field">
-            <span class="ed-field-label">Chattiness</span>
-            <select name="edChattiness">
-              <option value="quiet">Quiet</option>
-              <option value="normal">Normal</option>
-              <option value="chatty">Chatty</option>
-            </select>
-          </label>
-        </section>
+          <section class="ed-settings-section">
+            <h2>Updates</h2>
+            <label class="ed-check">
+              <input name="autoCheckUpdates" type="checkbox" />
+              <span>Check for updates automatically</span>
+            </label>
+          </section>
+        </div>
 
-        <section class="ed-settings-section">
-          <h2>Appearance</h2>
-          <label class="ed-field">
-            <span class="ed-field-label">Backdrop dim</span>
-            <span class="ed-range">
-              <input name="backdropDim" type="range" min="0" step="5" />
-              <output id="ed-settings-dim-value"></output>
-            </span>
-          </label>
-        </section>
+        <div id="ed-settings-page-appearance" class="ed-settings-page" role="tabpanel" aria-labelledby="ed-settings-tab-appearance" data-page="appearance">
+          <section class="ed-settings-section">
+            <h2>Text</h2>
+            <label class="ed-field">
+              <span class="ed-field-label">Font family</span>
+              <select name="fontFamily">
+                <option value="">Default (Cascadia Mono)</option>
+              </select>
+            </label>
+            <div id="ed-settings-font-preview" class="ed-font-preview">The quick brown fox 0O 1lI {} =&gt;</div>
+            <label class="ed-check ed-field-indent">
+              <input id="ed-settings-all-fonts" type="checkbox" />
+              <span>Show all fonts, not just monospace</span>
+            </label>
+            <label class="ed-field">
+              <span class="ed-field-label">Font size</span>
+              <input name="fontSize" type="number" step="1" />
+            </label>
+            <p class="ed-field-hint">Also Ctrl+= and Ctrl+- in the terminal, Ctrl+0 to reset.</p>
+            <label class="ed-field">
+              <span class="ed-field-label">Cursor style</span>
+              <select name="cursorStyle">
+                <option value="block">Block</option>
+                <option value="bar">Bar</option>
+                <option value="underline">Underline</option>
+              </select>
+            </label>
+          </section>
 
-        <section class="ed-settings-section">
-          <h2>Window</h2>
-          <label class="ed-check">
-            <input name="rememberWindowBounds" type="checkbox" />
-            <span>Remember window size and position</span>
-          </label>
-        </section>
+          <section class="ed-settings-section">
+            <h2>Background</h2>
+            <label class="ed-field">
+              <span class="ed-field-label">Backdrop dim</span>
+              <span class="ed-range">
+                <input name="backdropDim" type="range" min="0" step="5" />
+                <output id="ed-settings-dim-value"></output>
+              </span>
+            </label>
+          </section>
+        </div>
 
-        <section class="ed-settings-section">
-          <h2>Updates</h2>
-          <label class="ed-check">
-            <input name="autoCheckUpdates" type="checkbox" />
-            <span>Check for updates automatically</span>
-          </label>
-        </section>
+        <div id="ed-settings-page-ed" class="ed-settings-page" role="tabpanel" aria-labelledby="ed-settings-tab-ed" data-page="ed">
+          <section class="ed-settings-section">
+            <h2>Behavior</h2>
+            <label class="ed-field">
+              <span class="ed-field-label">Chattiness</span>
+              <select name="edChattiness">
+                <option value="quiet">Quiet</option>
+                <option value="normal">Normal</option>
+                <option value="chatty">Chatty</option>
+              </select>
+            </label>
+            <p class="ed-field-hint">How often Ed reacts to your commands and chimes in on his own. Errors always get encouragement.</p>
+          </section>
+        </div>
       </form>
     </div>
   </div>
