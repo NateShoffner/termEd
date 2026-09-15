@@ -9,6 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run build` - bundle main/preload/renderer via esbuild to `out/` (no typecheck).
 - `npm run check` - `tsc --noEmit`. There is no separate lint step and no test suite.
 - `npm run demo` - scripted showcase session (`--demo` flag) with no real shell; see "Demo mode" below.
+- `npm run demo:record` - re-record the README preview: runs demo mode with a throwaway profile, captures it over a CDP screencast, and writes `assets/demo.gif` (plus `assets/demo.webm`) with ffmpeg, which must be on PATH. Takes about two minutes. `npm run demo:record -- --out <dir>` writes somewhere else; tuning flags are in the header of `scripts/record-demo.mjs`.
 - `npm run pack` - unpacked electron-builder output to `dist/` (`--dir`, fast, no installer).
 - `npm run dist` - full installers via electron-builder (`--publish=never`).
 - `TERMED_SHELL=<shell> npm start` - force a specific shell instead of the platform default.
@@ -39,7 +40,7 @@ A tab is a `PaneGroup` (a binary split tree of terminals) plus a single Ed. The 
 
 ### Demo mode
 
-`--demo` (or `TERMED_DEMO=1`) bypasses the tab system and real ptys entirely: `src/renderer/demo.ts` scripts a fake prompt/output sequence through the *same* `EdEngine.onKeystroke`/`onOutput` hooks a real tab uses, so Ed's reactions are genuine even though nothing is actually executing. `renderer.ts` branches early on `window.termed.demo` and builds a single non-closable session by hand (via the same `createSession()`/`createPaneEl()` helpers `TabManager` and `PaneGroup` use) rather than going through `TabManager` at all. There's no `TabManager` in demo mode, so the dropdown menu hides everything except About, and the tab bar hides its new tab and settings buttons. Saved settings (font, cursor, backdrop dim) still apply.
+`--demo` (or `TERMED_DEMO=1`) bypasses the tab system and real ptys entirely: `src/renderer/demo.ts` scripts a fake prompt/output sequence through the *same* `EdEngine.onKeystroke`/`onOutput` hooks a real tab uses, so Ed's reactions are genuine even though nothing is actually executing. `renderer.ts` branches early on `window.termed.demo` and builds a single non-closable session by hand (via the same `createSession()`/`createPaneEl()` helpers `TabManager` and `PaneGroup` use) rather than going through `TabManager` at all. There's no `TabManager` in demo mode, so the dropdown menu hides everything except About, and the tab bar hides its new tab and settings buttons. Saved settings (font, cursor, backdrop dim) still apply. When the script finishes, the renderer sets `data-demo-done` on `<html>`; `scripts/record-demo.mjs` waits for it to end the recording, so a longer or shorter script needs no recorder changes.
 
 ### Settings
 

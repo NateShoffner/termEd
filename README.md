@@ -74,6 +74,7 @@ src/renderer/ed-quotes.ts      what Ed says
 ```
 
 - `npm run check` typechecks, `npm run build` bundles to `out/`.
+- `npm run demo:record` re-records the preview at the top of this README (`assets/demo.gif`) from demo mode. Needs [ffmpeg](https://ffmpeg.org/download.html) on your PATH.
 - `npm start` builds and runs the dev binary. On macOS the Dock/menu bar will read "Electron" there, since that's the unpackaged binary's own identity; `npm run start:packaged` (macOS only) builds a real `termEd.app` first and is correctly branded everywhere.
 - App version and commit hash are baked in at build time from `git describe`/`git rev-parse` (see `scripts/build.mjs`) - no `.git` is needed at runtime.
 - `npm run pack` / `npm run dist` build installers via electron-builder. Pushing a `vX.Y.Z` tag triggers `.github/workflows/build.yml`, which builds all platforms and publishes a GitHub Release; packaged builds pick up new releases automatically via `electron-updater`. Note: mac auto-update requires a signed, notarized build - unsigned dev builds skip it.

@@ -121,7 +121,8 @@ void window.termed.getSettings().then((initialSettings) => {
     window.addEventListener('resize', () => fitAddon.fit());
 
     const ed = new EdEngine(session, ED_QUOTES, edOptionsFor(settings));
-    void runDemo(term, ed);
+    // scripts/record-demo.mjs watches for this to know when to stop recording.
+    void runDemo(term, ed).then(() => document.documentElement.setAttribute('data-demo-done', ''));
     return;
   }
 

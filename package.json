@@ -6,6 +6,7 @@
   "scripts": {
     "start": "npm run build && electron .",
     "demo": "npm run build && electron . --demo",
+    "demo:record": "npm run build && node scripts/record-demo.mjs",
     "build": "node scripts/build.mjs",
     "check": "tsc --noEmit",
     "pack": "npm run build && electron-builder --dir",
