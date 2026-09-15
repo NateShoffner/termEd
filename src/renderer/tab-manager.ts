@@ -44,7 +44,21 @@ interface Tab {
   tabButton: HTMLButtonElement;
 }
 
+/**
+ * Where panes get their shells: main's real ptys (window.termed), or demo
+ * mode's scripted fakes (DemoPtys). Ids are per pane.
+ */
+export interface PtyBackend {
+  createPty(): Promise<string>;
+  closePty(id: string): void;
+  input(id: string, data: string): void;
+  resize(id: string, cols: number, rows: number): void;
+  onData(callback: (id: string, data: string) => void): void;
+  onExit(callback: (id: string) => void): void;
+}
+
 export interface TabManagerOptions {
+  ptys: PtyBackend;
   terminalOptions: ITerminalOptions;
   quotes: EdQuotes;
   edOptions: EdEngineOptions;
@@ -70,11 +84,11 @@ export class TabManager {
     this.tabList = document.getElementById('ed-tablist')!;
     this.panesRoot = document.getElementById('terminal-panes')!;
 
-    window.termed.onData((paneId, data) => {
+    this.opts.ptys.onData((paneId, data) => {
       this.tabFor(paneId)?.panes.write(paneId, data);
     });
 
-    window.termed.onExit((paneId) => {
+    this.opts.ptys.onExit((paneId) => {
       const tab = this.tabFor(paneId);
       this.paneOwner.delete(paneId);
       tab?.panes.removePane(paneId);
@@ -122,13 +136,13 @@ export class TabManager {
     const panes = new PaneGroup(root, {
       terminalOptions: this.opts.terminalOptions,
       createPty: async () => {
-        const paneId = await window.termed.createPty();
+        const paneId = await this.opts.ptys.createPty();
         this.paneOwner.set(paneId, tabId);
         return paneId;
       },
-      closePty: (paneId) => window.termed.closePty(paneId),
-      input: (paneId, data) => window.termed.input(paneId, data),
-      resize: (paneId, cols, rows) => window.termed.resize(paneId, cols, rows),
+      closePty: (paneId) => this.opts.ptys.closePty(paneId),
+      input: (paneId, data) => this.opts.ptys.input(paneId, data),
+      resize: (paneId, cols, rows) => this.opts.ptys.resize(paneId, cols, rows),
       onActiveInput: (data) => ed.onKeystroke(data),
       onActiveOutput: (data) => ed.onOutput(data),
       // The shell (or whatever's running in it) sets this via OSC 0/2 title
@@ -177,8 +191,15 @@ export class TabManager {
     if (this.activeId) this.closeTab(this.activeId);
   }
 
-  splitActive(dir: SplitDirection): void {
-    if (this.activeId) void this.tabs.get(this.activeId)?.panes.split(dir);
+  async splitActive(dir: SplitDirection): Promise<void> {
+    if (this.activeId) await this.tabs.get(this.activeId)?.panes.split(dir);
+  }
+
+  // Feeds data to the active pane as if it were typed, through xterm, so the
+  // pane's shell and Ed see exactly what real keystrokes produce. Demo mode's
+  // script types this way.
+  sendInput(data: string): void {
+    if (this.activeId) this.tabs.get(this.activeId)?.panes.sendInput(data);
   }
 
   // Settings changes reach every open tab and pane, not just ones opened
@@ -201,7 +222,7 @@ export class TabManager {
     return tabId ? this.tabs.get(tabId) : undefined;
   }
 
-  private cycleTab(direction: 1 | -1): void {
+  cycleTab(direction: 1 | -1): void {
     const ids = [...this.tabs.keys()];
     if (ids.length < 2 || !this.activeId) return;
     const index = ids.indexOf(this.activeId);

@@ -85,6 +85,11 @@ export class PaneGroup {
     this.active?.term.focus();
   }
 
+  /** Feeds data to the active pane as if typed (see TabManager.sendInput). */
+  sendInput(data: string): void {
+    this.active?.term.input(data);
+  }
+
   /** Re-fits every pane - needed after the tab becomes visible again. */
   fitAll(): void {
     for (const leaf of this.leaves.values()) this.fitLeaf(leaf);

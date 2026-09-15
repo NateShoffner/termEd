@@ -50,7 +50,7 @@ npm install
 npm start
 ```
 
-Set `TERMED_SHELL` to use a specific shell (overrides the shell setting). `npm run demo` plays a scripted session with no real shell.
+Set `TERMED_SHELL` to use a specific shell (overrides the shell setting). `npm run demo` plays a scripted session on fake shells: a couple of tabs, and a split pane with a watch build next to the tests.
 
 ## Development
 

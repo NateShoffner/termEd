@@ -1,13 +1,9 @@
-import { Terminal, type ITerminalOptions } from '@xterm/xterm';
-import { FitAddon } from '@xterm/addon-fit';
-import { WebglAddon } from '@xterm/addon-webgl';
-import { WebLinksAddon } from '@xterm/addon-web-links';
+import { type ITerminalOptions } from '@xterm/xterm';
 import '@xterm/xterm/css/xterm.css';
 import { ED_QUOTES } from './ed-quotes';
-import { ED_CHATTINESS, EdEngine, type EdEngineOptions } from './ed-engine';
-import { runDemo } from './demo';
-import { TabManager, createSession } from './tab-manager';
-import { createPaneEl } from './panes';
+import { ED_CHATTINESS, type EdEngineOptions } from './ed-engine';
+import { DemoPtys, runDemo } from './demo';
+import { TabManager } from './tab-manager';
 import { SettingsPanel } from './settings-panel';
 import { fontStack } from './fonts';
 import { initUpdateUi } from './update-ui';
@@ -87,45 +83,6 @@ void window.termed.getSettings().then((initialSettings) => {
   let settings = initialSettings;
   applyAppearance(settings);
 
-  if (window.termed.demo) {
-    // Scripted showcase: one fake, non-interactive tab, no real pty.
-    document.getElementById('ed-new-tab')!.style.display = 'none';
-    document.getElementById('ed-settings-btn')!.style.display = 'none';
-    const demoTab = document.createElement('div');
-    demoTab.className = 'ed-tab active';
-    demoTab.textContent = 'Demo';
-    document.getElementById('ed-tablist')!.appendChild(demoTab);
-
-    const { session, root } = createSession();
-    session.classList.add('active');
-    document.getElementById('terminal-panes')!.appendChild(session);
-
-    const pane = createPaneEl();
-    pane.classList.add('active-pane');
-    root.appendChild(pane);
-
-    const term = new Terminal(terminalOptionsFor(settings));
-    const fitAddon = new FitAddon();
-    term.loadAddon(fitAddon);
-    term.loadAddon(new WebLinksAddon());
-    term.open(pane);
-    try {
-      const webgl = new WebglAddon();
-      webgl.onContextLoss(() => webgl.dispose());
-      term.loadAddon(webgl);
-    } catch (e) {
-      console.warn('WebGL renderer unavailable, using DOM renderer:', e);
-    }
-    fitAddon.fit();
-    term.focus();
-    window.addEventListener('resize', () => fitAddon.fit());
-
-    const ed = new EdEngine(session, ED_QUOTES, edOptionsFor(settings));
-    // scripts/record-demo.mjs watches for this to know when to stop recording.
-    void runDemo(term, ed).then(() => document.documentElement.setAttribute('data-demo-done', ''));
-    return;
-  }
-
   // Applied locally first (sanitized by the same rules main uses), then
   // persisted, so rapid repeats like Ctrl+= build on each other instead of
   // racing the IPC round trip.
@@ -136,7 +93,10 @@ void window.termed.getSettings().then((initialSettings) => {
     window.termed.setSettings(settings);
   };
 
+  // Demo mode runs the real tab and pane UI on scripted fake shells.
+  const demoPtys = window.termed.demo ? new DemoPtys() : null;
   tabManager = new TabManager({
+    ptys: demoPtys ?? window.termed,
     terminalOptions: terminalOptionsFor(settings),
     quotes: ED_QUOTES,
     edOptions: edOptionsFor(settings),
@@ -161,7 +121,13 @@ void window.termed.getSettings().then((initialSettings) => {
     .getElementById('ed-settings-btn')!
     .addEventListener('click', () => settingsPanel?.open());
 
-  void tabManager.createTab();
+  void tabManager.createTab().then(() => {
+    if (!demoPtys) return;
+    // scripts/record-demo.mjs watches for this to know when to stop recording.
+    void runDemo(tabManager!, demoPtys).then(() =>
+      document.documentElement.setAttribute('data-demo-done', '')
+    );
+  });
 });
 
 // Tab bar dropdown menu
@@ -169,15 +135,6 @@ const menu = document.getElementById('ed-menu')!;
 const menuButton = document.getElementById('ed-tab-menu')!;
 const closeMenu = () => menu.classList.add('hidden');
 const runUpdateAction = initUpdateUi();
-
-// Demo mode has no tab manager, so only the About entry does anything.
-if (window.termed.demo) {
-  for (const el of menu.querySelectorAll<HTMLElement>(
-    '[data-action="new-tab"], [data-action="split-row"], [data-action="split-column"], [data-action="settings"], .ed-menu-sep'
-  )) {
-    el.style.display = 'none';
-  }
-}
 
 menuButton.addEventListener('click', (e) => {
   e.stopPropagation();
@@ -201,8 +158,8 @@ menu.addEventListener('click', (e) => {
   if (!action) return;
   closeMenu();
   if (action === 'new-tab') void tabManager?.createTab();
-  else if (action === 'split-row') tabManager?.splitActive('row');
-  else if (action === 'split-column') tabManager?.splitActive('column');
+  else if (action === 'split-row') void tabManager?.splitActive('row');
+  else if (action === 'split-column') void tabManager?.splitActive('column');
   else if (action === 'settings') settingsPanel?.open();
   else if (action === 'update') runUpdateAction();
   else if (action === 'about') openAbout();
