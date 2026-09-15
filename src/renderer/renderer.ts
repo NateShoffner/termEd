@@ -4,6 +4,7 @@ import { ED_QUOTES } from './ed-quotes';
 import { ED_CHATTINESS, type EdEngineOptions } from './ed-engine';
 import { DemoPtys, runDemo } from './demo';
 import { TabManager } from './tab-manager';
+import { ContextMenu } from './context-menu';
 import { SettingsPanel } from './settings-panel';
 import { fontStack } from './fonts';
 import { initUpdateUi } from './update-ui';
@@ -64,6 +65,7 @@ function edOptionsFor(settings: Settings): EdEngineOptions {
   return {
     photos: ED_PHOTOS,
     platform: window.termed.platform,
+    popups: settings.edPopups,
     // Demo pacing: reactions land close together, and the idle check-in fires
     // shortly after the script ends (14s clears every mid-demo pause).
     ...(window.termed.demo
@@ -74,6 +76,7 @@ function edOptionsFor(settings: Settings): EdEngineOptions {
 
 function applyAppearance(settings: Settings): void {
   document.documentElement.style.setProperty('--pane-tint', String(settings.backdropDim / 100));
+  document.documentElement.classList.toggle('ed-no-backdrop', !settings.edBackdrop);
 }
 
 let tabManager: TabManager | null = null;
@@ -97,6 +100,7 @@ void window.termed.getSettings().then((initialSettings) => {
   const demoPtys = window.termed.demo ? new DemoPtys() : null;
   tabManager = new TabManager({
     ptys: demoPtys ?? window.termed,
+    contextMenu: new ContextMenu(),
     terminalOptions: terminalOptionsFor(settings),
     quotes: ED_QUOTES,
     edOptions: edOptionsFor(settings),
@@ -152,6 +156,8 @@ menuButton.addEventListener('click', (e) => {
 document.addEventListener('click', (e) => {
   if (!menu.classList.contains('hidden') && !menu.contains(e.target as Node)) closeMenu();
 });
+// A right-click doesn't fire click, so opening a context menu closes this too.
+document.addEventListener('contextmenu', () => closeMenu());
 
 menu.addEventListener('click', (e) => {
   const action = (e.target as HTMLElement).closest('button')?.dataset.action;

@@ -15,12 +15,13 @@ A fully functional terminal emulator built entirely around Ed - your personal hy
 - **A real terminal.** Wraps your actual shell (PowerShell/pwsh on Windows, `$SHELL` elsewhere) via a pseudo-terminal.
 - **Tabs.** Open as many sessions as you want (Ctrl/Cmd+T, Ctrl/Cmd+W, Ctrl/Cmd+Tab to cycle). Tab titles follow the shell's own OSC title escapes.
 - **Split panes.** Split any tab as many times as you like, drag the dividers to resize, and move focus by direction. Each pane is a real independent shell.
+- **Right-click menus.** Copy, paste, select all, split, clear, and close from any pane; open a new tab or close tabs (this one, the others, or everything to its right) from any tab.
 - **Ed is always there - per tab.** Each tab gets its own Ed: his own wallpaper pose, popups, and cooldowns, fully independent of your other sessions. Panes within a tab share him.
 - **Dynamic MOTD** - every session opens with a fresh bit of Ed wisdom.
 - **Command reactions** - wins get celebrated, errors get encouragement.
 - **Ambient hype** - unprompted words of motivation every few minutes.
 - **Idle check-ins** - gone quiet? Ed checks on you.
-- **Settings** - click the gear at the right end of the tab bar (or use the `⌄` menu, or Ctrl/Cmd+,). General covers the default shell, starting directory, window size memory, and update checks; Appearance covers font, cursor, and backdrop dim; Ed covers his chattiness.
+- **Settings** - click the gear at the right end of the tab bar (or use the `⌄` menu, or Ctrl/Cmd+,). General covers the default shell, starting directory, window size memory, and update checks; Appearance covers font, cursor, and backdrop dim; Ed covers his backdrop, popups, and chattiness.
 - **About screen** - click the ⓘ at the right end of the tab bar (or use the `⌄` menu) for version, commit hash, update status, and credits.
 - **Self-updating.** Installed builds check GitHub Releases on launch and every few hours, download in the background, and offer "Restart to update" from the `⌄` menu. Check manually from the About screen, or turn automatic checks off in Settings. macOS and portable builds link to the release page instead of installing.
 
@@ -69,6 +70,7 @@ src/renderer/fonts.ts          installed font list (for the picker) + default fo
 src/renderer/update-ui.ts      update status in the About screen and tab bar menu
 src/renderer/tab-manager.ts    one PaneGroup + EdEngine per open tab
 src/renderer/panes.ts          the split tree: one xterm + pty per pane
+src/renderer/context-menu.ts   the shared right-click menu
 src/renderer/ed-engine.ts      when Ed speaks, scoped to a single tab's DOM
 src/renderer/ed-quotes.ts      what Ed says
 ```

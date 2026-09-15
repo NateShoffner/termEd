@@ -56,6 +56,11 @@ img {
   opacity: 0.38;
 }
 
+/* Settings > Ed > "Show Ed as the terminal background" turned off. */
+.ed-no-backdrop .ed-backdrop {
+  display: none;
+}
+
 #ed-scrim {
   position: fixed;
   inset: 0;
@@ -267,9 +272,10 @@ img {
 }
 
 /* Tab bar dropdown */
-/* renderer.ts moves this under the menu button each time it opens, since the
-   button follows the last tab. */
-#ed-menu {
+/* The tab bar dropdown and the right-click menu share this look. renderer.ts
+   moves the dropdown under its button each time it opens (the button follows
+   the last tab); context-menu.ts places the right-click menu at the pointer. */
+.ed-menu {
   position: fixed;
   top: 44px;
   left: 8px;
@@ -286,11 +292,11 @@ img {
   box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
 }
 
-#ed-menu.hidden {
+.ed-menu.hidden {
   display: none;
 }
 
-#ed-menu button {
+.ed-menu button {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -306,11 +312,16 @@ img {
   cursor: pointer;
 }
 
-#ed-menu button:hover {
+.ed-menu button:hover:not(:disabled) {
   background: rgba(120, 200, 255, 0.14);
 }
 
-#ed-menu kbd {
+.ed-menu button:disabled {
+  color: #5a5f7a;
+  cursor: default;
+}
+
+.ed-menu kbd {
   font-family: 'Cascadia Mono', Consolas, monospace;
   font-size: 11px;
   color: #7a8199;
@@ -323,7 +334,7 @@ img {
 }
 
 /* The hidden attribute has to beat the display: flex above. */
-#ed-menu button[hidden] {
+.ed-menu button[hidden] {
   display: none;
 }
 
@@ -549,7 +560,7 @@ img {
    while open: a hidden one marked no-drag would kill dragging for good. */
 #ed-about:not(.hidden),
 #ed-settings:not(.hidden),
-#ed-menu {
+.ed-menu {
   -webkit-app-region: no-drag;
 }
 
@@ -851,6 +862,15 @@ img {
   font-size: 13px;
   color: #cfd6ea;
   cursor: pointer;
+}
+
+.ed-check + .ed-check {
+  margin-top: 8px;
+}
+
+.ed-field select:disabled {
+  color: #5a5f7a;
+  cursor: default;
 }
 
 #ed-settings-panel input[type='range'],

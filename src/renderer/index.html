@@ -30,7 +30,7 @@
     </button>
   </div>
 
-  <div id="ed-menu" class="hidden" role="menu">
+  <div id="ed-menu" class="ed-menu hidden" role="menu">
     <button type="button" data-action="new-tab" role="menuitem">New tab<kbd>Ctrl+T</kbd></button>
     <button type="button" data-action="split-row" role="menuitem">Split right<kbd>Alt+Shift++</kbd></button>
     <button type="button" data-action="split-column" role="menuitem">Split down<kbd>Alt+Shift+-</kbd></button>
@@ -40,6 +40,8 @@
     <button type="button" data-action="update" role="menuitem" hidden></button>
     <button type="button" data-action="about" role="menuitem">About termEd</button>
   </div>
+  <!-- Right-click menu for panes and tabs, filled in by context-menu.ts. -->
+  <div id="ed-context-menu" class="ed-menu hidden" role="menu"></div>
   <!-- Each tab gets its own backdrop + bubble + terminal, appended here at
        runtime (see tab-manager.ts createSession) so Ed's wallpaper and
        popups are independent per tab. -->
@@ -154,6 +156,18 @@
         </div>
 
         <div id="ed-settings-page-ed" class="ed-settings-page" role="tabpanel" aria-labelledby="ed-settings-tab-ed" data-page="ed">
+          <section class="ed-settings-section">
+            <h2>Presence</h2>
+            <label class="ed-check">
+              <input name="edBackdrop" type="checkbox" />
+              <span>Show Ed as the terminal background</span>
+            </label>
+            <label class="ed-check">
+              <input name="edPopups" type="checkbox" />
+              <span>Show Ed's popups</span>
+            </label>
+          </section>
+
           <section class="ed-settings-section">
             <h2>Behavior</h2>
             <label class="ed-field">

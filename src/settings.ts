@@ -27,6 +27,10 @@ export interface Settings {
   rememberWindowBounds: boolean;
   /** Installed builds only: check on startup and every few hours. */
   autoCheckUpdates: boolean;
+  /** Ed's photo behind the terminal. */
+  edBackdrop: boolean;
+  /** Ed's speech bubble: greetings, reactions, check-ins. */
+  edPopups: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -39,6 +43,8 @@ export const DEFAULT_SETTINGS: Settings = {
   backdropDim: 45,
   rememberWindowBounds: true,
   autoCheckUpdates: true,
+  edBackdrop: true,
+  edPopups: true,
 };
 
 const text = (value: unknown, fallback: string): string =>
@@ -74,5 +80,7 @@ export function sanitizeSettings(raw: unknown): Settings {
     backdropDim: integer(input.backdropDim, 0, BACKDROP_DIM_MAX, d.backdropDim),
     rememberWindowBounds: flag(input.rememberWindowBounds, d.rememberWindowBounds),
     autoCheckUpdates: flag(input.autoCheckUpdates, d.autoCheckUpdates),
+    edBackdrop: flag(input.edBackdrop, d.edBackdrop),
+    edPopups: flag(input.edPopups, d.edPopups),
   };
 }

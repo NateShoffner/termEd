@@ -2,6 +2,7 @@ import { type ITerminalOptions } from '@xterm/xterm';
 import type { EdQuotes } from './ed-quotes';
 import { EdEngine, type EdEngineOptions } from './ed-engine';
 import { PaneGroup, type SplitDirection } from './panes';
+import type { ContextMenu, MenuEntry } from './context-menu';
 
 // The DOM each tab gets: its own wallpaper backdrop and popup bubble, plus the
 // root the pane tree mounts into. Wrapping all three in one element lets a
@@ -59,6 +60,7 @@ export interface PtyBackend {
 
 export interface TabManagerOptions {
   ptys: PtyBackend;
+  contextMenu: ContextMenu;
   terminalOptions: ITerminalOptions;
   quotes: EdQuotes;
   edOptions: EdEngineOptions;
@@ -124,6 +126,10 @@ export class TabManager {
     tabButton.title = defaultTitle;
     tabButton.append(label, close);
     tabButton.addEventListener('click', () => this.activate(tabId));
+    tabButton.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      this.opts.contextMenu.open(e.clientX, e.clientY, this.tabMenu(tabId));
+    });
     // Middle-click closes, same as a browser tab.
     tabButton.addEventListener('auxclick', (e) => {
       if (e.button === 1) {
@@ -154,6 +160,7 @@ export class TabManager {
       },
       onEmpty: () => this.removeTab(tabId),
       onKeyDown: (event) => this.handleKey(event, tabId),
+      onContextMenu: (x, y) => this.opts.contextMenu.open(x, y, this.paneMenu(panes)),
     });
 
     this.tabs.set(tabId, { id: tabId, panes, ed, session, tabButton });
@@ -215,6 +222,41 @@ export class TabManager {
 
   focusActive(): void {
     if (this.activeId) this.tabs.get(this.activeId)?.panes.focusActive();
+  }
+
+  private tabMenu(tabId: string): MenuEntry[] {
+    const ids = [...this.tabs.keys()];
+    const index = ids.indexOf(tabId);
+    return [
+      { label: 'New tab', shortcut: 'Ctrl+T', action: () => void this.createTab() },
+      'separator',
+      { label: 'Close tab', shortcut: 'Ctrl+W', action: () => this.closeTab(tabId) },
+      {
+        label: 'Close other tabs',
+        disabled: ids.length < 2,
+        action: () => ids.filter((id) => id !== tabId).forEach((id) => this.closeTab(id)),
+      },
+      {
+        label: 'Close tabs to the right',
+        disabled: index === ids.length - 1,
+        action: () => ids.slice(index + 1).forEach((id) => this.closeTab(id)),
+      },
+    ];
+  }
+
+  // Right-clicking a pane focuses it first, so these act on the clicked pane.
+  private paneMenu(panes: PaneGroup): MenuEntry[] {
+    return [
+      { label: 'Copy', disabled: !panes.hasSelection(), action: () => void panes.copySelection() },
+      { label: 'Paste', action: () => void panes.paste() },
+      { label: 'Select all', action: () => panes.selectAll() },
+      'separator',
+      { label: 'Split right', shortcut: 'Alt+Shift++', action: () => void panes.split('row') },
+      { label: 'Split down', shortcut: 'Alt+Shift+-', action: () => void panes.split('column') },
+      'separator',
+      { label: 'Clear', action: () => panes.clear() },
+      { label: 'Close pane', shortcut: 'Ctrl+Shift+W', action: () => panes.closeActive() },
+    ];
   }
 
   private tabFor(paneId: string): Tab | undefined {

@@ -16,6 +16,8 @@ export interface EdPacing {
 export interface EdEngineOptions extends EdPacing {
   photos?: string[];
   platform?: string;
+  /** False keeps Ed quiet: no bubble at all (the edPopups setting). */
+  popups?: boolean;
 }
 
 const DEFAULT_PACING: Required<EdPacing> = {
@@ -67,6 +69,7 @@ type Timer = ReturnType<typeof setTimeout>;
 export class EdEngine {
   private quotes: EdQuotes;
   private pacing: Required<EdPacing>;
+  private popups: boolean;
 
   private lastSpokeAt = 0;
   private lastReactionAt = 0;
@@ -96,6 +99,7 @@ export class EdEngine {
     this.container = container;
     this.quotes = quotes;
     this.pacing = resolvePacing(options);
+    this.popups = options.popups ?? true;
 
     this.bubble = container.querySelector('.ed-bubble')!;
     this.bubbleText = container.querySelector('.ed-bubble-text')!;
@@ -163,6 +167,7 @@ export class EdEngine {
   }
 
   speak(text: string, { force = false } = {}): boolean {
+    if (!this.popups) return false;
     const now = Date.now();
     if (!force && now - this.lastSpokeAt < this.pacing.globalCooldown) return false;
     this.lastSpokeAt = now;
@@ -227,7 +232,9 @@ export class EdEngine {
 
   // Settings changed. Re-arms the idle and interval timers so a new pace
   // takes effect now, not after a delay the old pace already scheduled.
-  updateOptions(options: EdPacing): void {
+  updateOptions(options: EdEngineOptions): void {
+    this.popups = options.popups ?? true;
+    if (!this.popups) this.hideBubble();
     const pacing = resolvePacing(options);
     if (PACING_KEYS.every((key) => pacing[key] === this.pacing[key])) return;
     this.pacing = pacing;

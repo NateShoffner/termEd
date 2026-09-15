@@ -48,6 +48,8 @@ export interface PaneGroupOptions {
   onEmpty(): void;
   /** Tab-level shortcuts. Return true if the event was consumed. */
   onKeyDown(event: KeyboardEvent): boolean;
+  /** A pane was right-clicked (and is now the active pane). */
+  onContextMenu(x: number, y: number): void;
 }
 
 const MIN_RATIO = 0.1;
@@ -88,6 +90,35 @@ export class PaneGroup {
   /** Feeds data to the active pane as if typed (see TabManager.sendInput). */
   sendInput(data: string): void {
     this.active?.term.input(data);
+  }
+
+  // Context menu actions, all on the active pane.
+  hasSelection(): boolean {
+    return this.active?.term.hasSelection() ?? false;
+  }
+
+  async copySelection(): Promise<void> {
+    const text = this.active?.term.getSelection();
+    if (text) await navigator.clipboard.writeText(text);
+    this.focusActive();
+  }
+
+  async paste(): Promise<void> {
+    // term.paste, not input: it applies bracketed paste when the shell asked
+    // for it, so multi-line pastes don't run line by line.
+    const text = await navigator.clipboard.readText();
+    if (text) this.active?.term.paste(text);
+    this.focusActive();
+  }
+
+  selectAll(): void {
+    this.active?.term.selectAll();
+    this.focusActive();
+  }
+
+  clear(): void {
+    this.active?.term.clear();
+    this.focusActive();
   }
 
   /** Re-fits every pane - needed after the tab becomes visible again. */
@@ -279,6 +310,11 @@ export class PaneGroup {
     term.attachCustomKeyEventHandler((event) => this.handleKey(event));
     // xterm swallows the mousedown, so focus tracking has to be explicit.
     el.addEventListener('mousedown', () => this.focus(leaf), true);
+    el.addEventListener('contextmenu', (event) => {
+      event.preventDefault();
+      this.focus(leaf);
+      this.opts.onContextMenu(event.clientX, event.clientY);
+    });
 
     leaf.observer.observe(el);
     this.leaves.set(id, leaf);
