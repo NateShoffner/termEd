@@ -90,6 +90,7 @@ void window.termed.getSettings().then((initialSettings) => {
   if (window.termed.demo) {
     // Scripted showcase: one fake, non-interactive tab, no real pty.
     document.getElementById('ed-new-tab')!.style.display = 'none';
+    document.getElementById('ed-settings-btn')!.style.display = 'none';
     const demoTab = document.createElement('div');
     demoTab.className = 'ed-tab active';
     demoTab.textContent = 'Demo';
@@ -155,6 +156,9 @@ void window.termed.getSettings().then((initialSettings) => {
   document
     .getElementById('ed-new-tab')!
     .addEventListener('click', () => void tabManager!.createTab());
+  document
+    .getElementById('ed-settings-btn')!
+    .addEventListener('click', () => settingsPanel?.open());
 
   void tabManager.createTab();
 });
@@ -226,6 +230,8 @@ if (window.termed.commit === 'unknown') {
 
 const openAbout = () => aboutOverlay.classList.remove('hidden');
 const closeAbout = () => aboutOverlay.classList.add('hidden');
+
+document.getElementById('ed-about-btn')!.addEventListener('click', openAbout);
 
 document.getElementById('ed-about-close')!.addEventListener('click', closeAbout);
 aboutOverlay.addEventListener('click', (e) => {

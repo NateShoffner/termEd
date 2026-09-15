@@ -39,7 +39,7 @@ A tab is a `PaneGroup` (a binary split tree of terminals) plus a single Ed. The 
 
 ### Demo mode
 
-`--demo` (or `TERMED_DEMO=1`) bypasses the tab system and real ptys entirely: `src/renderer/demo.ts` scripts a fake prompt/output sequence through the *same* `EdEngine.onKeystroke`/`onOutput` hooks a real tab uses, so Ed's reactions are genuine even though nothing is actually executing. `renderer.ts` branches early on `window.termed.demo` and builds a single non-closable session by hand (via the same `createSession()`/`createPaneEl()` helpers `TabManager` and `PaneGroup` use) rather than going through `TabManager` at all. There's no `TabManager` in demo mode, so the dropdown menu hides everything except About. Saved settings (font, cursor, backdrop dim) still apply.
+`--demo` (or `TERMED_DEMO=1`) bypasses the tab system and real ptys entirely: `src/renderer/demo.ts` scripts a fake prompt/output sequence through the *same* `EdEngine.onKeystroke`/`onOutput` hooks a real tab uses, so Ed's reactions are genuine even though nothing is actually executing. `renderer.ts` branches early on `window.termed.demo` and builds a single non-closable session by hand (via the same `createSession()`/`createPaneEl()` helpers `TabManager` and `PaneGroup` use) rather than going through `TabManager` at all. There's no `TabManager` in demo mode, so the dropdown menu hides everything except About, and the tab bar hides its new tab and settings buttons. Saved settings (font, cursor, backdrop dim) still apply.
 
 ### Settings
 

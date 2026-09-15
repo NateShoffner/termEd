@@ -249,6 +249,23 @@ img {
   color: #eef2ff;
 }
 
+/* About and Settings are pinned to the right end of the strip, just before
+   the OS window buttons, however many tabs are open. Centered on the full bar
+   height (not the tab row) so they line up with those buttons. */
+#ed-about-btn,
+#ed-settings-btn {
+  flex-shrink: 0;
+  align-self: center;
+}
+
+#ed-about-btn {
+  margin-left: auto;
+}
+
+#ed-settings-btn {
+  margin: 0 4px 0 2px;
+}
+
 /* Tab bar dropdown */
 /* renderer.ts moves this under the menu button each time it opens, since the
    button follows the last tab. */
