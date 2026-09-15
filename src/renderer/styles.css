@@ -68,35 +68,52 @@ img {
   pointer-events: none;
 }
 
-/* Tab bar - Windows Terminal style: tabs share the width up to a cap, and the
-   active tab sits flush on the terminal pane below it so the two read as one
-   surface. The native title bar already shows the app icon, so the tab bar
-   doesn't repeat it. */
+/* Tab bar - Windows 11 (Notepad) style, and also the window's title bar: the
+   window has no native one (titleBarStyle: 'hidden' in main.ts), the OS draws
+   its buttons over one end (Window Controls Overlay), and the strip is the
+   drag handle. Height must match TITLEBAR_HEIGHT in main.ts.
+
+   -webkit-app-region: drag swallows DOM mouse events, so everything clickable
+   inside needs no-drag. Empty space (including after the + and menu buttons)
+   stays draggable, and double-clicking it maximizes, as with a native bar. */
 #ed-tabbar {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  height: 36px;
+  height: 40px;
   display: flex;
   align-items: stretch;
-  gap: 8px;
-  /* 16px on the left clears the pane's 8px corner radius, so the first tab
-     lands on the straight part of the pane's top edge instead of the curve. */
-  padding: 0 8px 0 16px;
-  background: rgba(8, 8, 14, 0.72);
+  /* env(titlebar-area-*) is the part of the strip the OS buttons don't cover:
+     they sit on the right on Windows and Linux, on the left on macOS. The
+     fallbacks apply when there's no overlay at all. */
+  padding-left: calc(env(titlebar-area-x, 0px) + 12px);
+  padding-right: calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw));
+  /* Darker than the terminal surface, so the filled active tab stands out
+     against the strip the way Notepad's does. */
+  background: rgba(4, 4, 8, 0.9);
   backdrop-filter: blur(14px) saturate(140%);
   -webkit-backdrop-filter: blur(14px) saturate(140%);
+  -webkit-app-region: drag;
   z-index: 5;
 }
 
+#ed-tabbar-icon {
+  flex-shrink: 0;
+  align-self: center;
+  width: 16px;
+  height: 16px;
+  margin-right: 10px;
+}
+
+/* Sized to its tabs rather than the whole bar, so + and the menu button
+   follow the last tab. Past the available width, tabs shrink, then scroll. */
 #ed-tablist {
   display: flex;
-  align-items: stretch;
-  flex: 1;
+  align-items: flex-end;
+  flex: 0 1 auto;
   min-width: 0;
-  gap: 2px;
-  padding: 4px 0 0;
+  padding-top: 6px;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -106,22 +123,24 @@ img {
 }
 
 .ed-tab {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
-  flex: 1 1 200px;
-  max-width: 220px;
-  min-width: 56px;
-  padding: 0 8px 0 12px;
+  flex: 0 1 220px;
+  min-width: 90px;
+  height: 34px;
+  padding: 0 6px 0 12px;
   border: none;
-  border-radius: 6px 6px 0 0;
+  border-radius: 8px 8px 0 0;
   background: transparent;
   color: #9aa3c0;
   font: inherit;
   font-size: 12px;
   text-align: left;
-  cursor: pointer;
+  cursor: default;
   white-space: nowrap;
+  -webkit-app-region: no-drag;
   transition: background 0.12s ease, color 0.12s ease;
 }
 
@@ -131,11 +150,30 @@ img {
 }
 
 .ed-tab.active {
-  /* Tuned to the pane's composited color (its translucent tint over the
-     backdrop), not its raw rgba, so the tab reads as part of the surface
-     below it. */
-  background: rgba(12, 13, 20, 0.85);
+  /* Lighter than the strip and close to the terminal surface below, which it
+     sits flush on. Matching the pane exactly isn't possible: the pane is
+     translucent over Ed's photo, while the tab is over the opaque strip. */
+  background: rgba(22, 24, 34, 0.92);
   color: #eef2ff;
+}
+
+/* Thin divider between two inactive tabs. Hidden on either side of a filled
+   (active or hovered) tab, so a line never cuts into its rounded edge. */
+.ed-tab + .ed-tab::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.ed-tab.active::before,
+.ed-tab.active + .ed-tab::before,
+.ed-tab:hover::before,
+.ed-tab:hover + .ed-tab::before {
+  display: none;
 }
 
 .ed-tab-label {
@@ -150,38 +188,43 @@ img {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 16px;
-  height: 16px;
+  width: 22px;
+  height: 22px;
   border-radius: 4px;
   opacity: 0;
   transition: opacity 0.15s ease, background 0.15s ease;
 }
 
+.ed-tab-close svg {
+  width: 12px;
+  height: 12px;
+}
+
 .ed-tab:hover .ed-tab-close,
 .ed-tab.active .ed-tab-close {
-  opacity: 0.55;
+  opacity: 0.8;
 }
 
 .ed-tab-close:hover {
-  background: rgba(255, 107, 122, 0.3);
+  background: rgba(255, 255, 255, 0.1);
   opacity: 1 !important;
 }
 
-/* Same top padding as #ed-tablist so the buttons center on the tabs rather
+/* Same top offset as #ed-tablist so the buttons center on the tab row rather
    than on the whole bar. */
 #ed-tabbar-actions {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding-top: 4px;
+  gap: 2px;
+  padding: 6px 0 0 4px;
   flex-shrink: 0;
 }
 
 /* Every action button is the same box with a same-sized stroked SVG, so the
    glyphs line up regardless of font metrics. */
 .ed-tabbar-button {
-  width: 34px;
-  height: 28px;
+  width: 32px;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -190,7 +233,8 @@ img {
   border-radius: 6px;
   background: transparent;
   color: #9aa3c0;
-  cursor: pointer;
+  cursor: default;
+  -webkit-app-region: no-drag;
   transition: background 0.12s ease, color 0.12s ease;
 }
 
@@ -206,10 +250,12 @@ img {
 }
 
 /* Tab bar dropdown */
+/* renderer.ts moves this under the menu button each time it opens, since the
+   button follows the last tab. */
 #ed-menu {
   position: fixed;
-  top: 38px;
-  right: 8px;
+  top: 44px;
+  left: 8px;
   z-index: 15;
   min-width: 220px;
   padding: 5px;
@@ -285,7 +331,7 @@ img {
    the tab bar); this root offsets the actual terminals below it. */
 .pane-root {
   position: absolute;
-  inset: 36px 8px 8px 8px;
+  inset: 40px 8px 8px 8px;
   z-index: 2;
   display: flex;
 }
@@ -359,6 +405,12 @@ img {
   border-radius: 8px;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
   transition: border-color 0.12s ease;
+}
+
+/* A lone pane has no top border line, so nothing cuts between it and the
+   active tab above. Split panes keep theirs (it's the active-pane highlight). */
+.pane-root > .terminal-pane {
+  border-top-color: transparent;
 }
 
 /* Only meaningful once a tab holds more than one pane; a lone pane keeps the
@@ -473,6 +525,15 @@ img {
   visibility: hidden;
   pointer-events: none;
   transition: opacity 0.2s ease, visibility 0s linear 0.2s;
+}
+
+/* Window drag regions ignore stacking order, so anything covering the tab
+   strip must opt out, or clicks there drag the window instead. Overlays only
+   while open: a hidden one marked no-drag would kill dragging for good. */
+#ed-about:not(.hidden),
+#ed-settings:not(.hidden),
+#ed-menu {
+  -webkit-app-region: no-drag;
 }
 
 #ed-about-panel,

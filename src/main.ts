@@ -26,6 +26,10 @@ app.setName('termEd');
 if (process.argv.includes('--demo')) process.env.TERMED_DEMO = '1';
 const isDemo = process.env.TERMED_DEMO === '1';
 
+// Height of the tab strip, which doubles as the title bar; the OS window
+// buttons are sized to match. Keep in sync with #ed-tabbar in styles.css.
+const TITLEBAR_HEIGHT = 40;
+
 function restoredWindowState(): WindowState | null {
   if (!getSettings().rememberWindowBounds) return null;
   const state = loadWindowState();
@@ -55,6 +59,16 @@ function createWindow(): void {
     minHeight: 320,
     title: 'termEd',
     backgroundColor: '#0a0a0f',
+    // No native title bar: the tab strip takes its place, Windows 11 style.
+    // Windows and Linux still draw min/max/close over the strip's right end
+    // (transparent, so the strip shows through); macOS keeps its traffic
+    // lights on the left. The renderer lays out around env(titlebar-area-*).
+    titleBarStyle: 'hidden',
+    titleBarOverlay:
+      process.platform === 'darwin'
+        ? true
+        : { color: 'rgba(0, 0, 0, 0)', symbolColor: '#cfd6ea', height: TITLEBAR_HEIGHT },
+    trafficLightPosition: { x: 12, y: 13 },
     icon: path.join(
       __dirname,
       '..',

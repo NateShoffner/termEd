@@ -176,7 +176,15 @@ if (window.termed.demo) {
 
 menuButton.addEventListener('click', (e) => {
   e.stopPropagation();
+  const opening = menu.classList.contains('hidden');
   menu.classList.toggle('hidden');
+  if (!opening) return;
+  // The button follows the last tab, so the menu opens under it (kept on
+  // screen) instead of at a fixed corner.
+  const button = menuButton.getBoundingClientRect();
+  const left = Math.min(button.left, window.innerWidth - menu.offsetWidth - 8);
+  menu.style.left = `${Math.max(8, left)}px`;
+  menu.style.top = `${button.bottom + 4}px`;
 });
 
 document.addEventListener('click', (e) => {
