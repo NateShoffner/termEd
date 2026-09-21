@@ -8,6 +8,9 @@ export type CursorStyle = (typeof CURSOR_STYLES)[number];
 export const ED_CHATTINESS_LEVELS = ['quiet', 'normal', 'chatty'] as const;
 export type EdChattiness = (typeof ED_CHATTINESS_LEVELS)[number];
 
+export const ED_POPUP_STYLES = ['bubble', 'card', 'floating', 'pill'] as const;
+export type EdPopupStyle = (typeof ED_POPUP_STYLES)[number];
+
 export const FONT_SIZE_MIN = 8;
 export const FONT_SIZE_MAX = 32;
 export const BACKDROP_DIM_MAX = 90;
@@ -31,6 +34,8 @@ export interface Settings {
   edBackdrop: boolean;
   /** Ed's speech bubble: greetings, reactions, check-ins. */
   edPopups: boolean;
+  /** How the popup looks; see [data-ed-popup] in styles.css. */
+  edPopupStyle: EdPopupStyle;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -45,6 +50,7 @@ export const DEFAULT_SETTINGS: Settings = {
   autoCheckUpdates: true,
   edBackdrop: true,
   edPopups: true,
+  edPopupStyle: 'bubble',
 };
 
 const text = (value: unknown, fallback: string): string =>
@@ -82,5 +88,6 @@ export function sanitizeSettings(raw: unknown): Settings {
     autoCheckUpdates: flag(input.autoCheckUpdates, d.autoCheckUpdates),
     edBackdrop: flag(input.edBackdrop, d.edBackdrop),
     edPopups: flag(input.edPopups, d.edPopups),
+    edPopupStyle: oneOf(input.edPopupStyle, ED_POPUP_STYLES, d.edPopupStyle),
   };
 }

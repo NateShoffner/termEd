@@ -189,6 +189,11 @@ export class EdEngine {
     return true;
   }
 
+  /** Speaks right away, cooldowns aside: shows off a newly picked popup style. */
+  preview(): void {
+    this.speak(this.pick('hype'), { force: true });
+  }
+
   hideBubble(): void {
     this.bubble.classList.add('hidden');
     this.container.classList.remove('ed-speaking');

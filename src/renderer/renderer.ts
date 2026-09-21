@@ -77,6 +77,7 @@ function edOptionsFor(settings: Settings): EdEngineOptions {
 function applyAppearance(settings: Settings): void {
   document.documentElement.style.setProperty('--pane-tint', String(settings.backdropDim / 100));
   document.documentElement.classList.toggle('ed-no-backdrop', !settings.edBackdrop);
+  document.documentElement.dataset.edPopup = settings.edPopupStyle;
 }
 
 let tabManager: TabManager | null = null;
@@ -94,6 +95,8 @@ void window.termed.getSettings().then((initialSettings) => {
     applyAppearance(settings);
     tabManager?.applyOptions(terminalOptionsFor(settings), edOptionsFor(settings));
     window.termed.setSettings(settings);
+    // Show a newly picked popup style now rather than whenever Ed next talks.
+    if (patch.edPopupStyle) tabManager?.previewPopup();
   };
 
   // Demo mode runs the real tab and pane UI on scripted fake shells.

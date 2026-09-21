@@ -224,6 +224,11 @@ export class TabManager {
     if (this.activeId) this.tabs.get(this.activeId)?.panes.focusActive();
   }
 
+  // Has the active tab's Ed speak now, e.g. to show a new popup style.
+  previewPopup(): void {
+    if (this.activeId) this.tabs.get(this.activeId)?.ed.preview();
+  }
+
   private tabMenu(tabId: string): MenuEntry[] {
     const ids = [...this.tabs.keys()];
     const index = ids.indexOf(tabId);

@@ -21,7 +21,7 @@ A fully functional terminal emulator built entirely around Ed - your personal hy
 - **Command reactions** - wins get celebrated, errors get encouragement.
 - **Ambient hype** - unprompted words of motivation every few minutes.
 - **Idle check-ins** - gone quiet? Ed checks on you.
-- **Settings** - click the gear at the right end of the tab bar (or use the `⌄` menu, or Ctrl/Cmd+,). General covers the default shell, starting directory, window size memory, and update checks; Appearance covers font, cursor, and backdrop dim; Ed covers his backdrop, popups, and chattiness.
+- **Settings** - click the gear at the right end of the tab bar (or use the `⌄` menu, or Ctrl/Cmd+,). General covers the default shell, starting directory, window size memory, and update checks; Appearance covers font, cursor, and backdrop dim; Ed covers his backdrop, popups (and their style), and chattiness.
 - **About screen** - click the ⓘ at the right end of the tab bar (or use the `⌄` menu) for version, commit hash, update status, and credits.
 - **Self-updating.** Installed builds check GitHub Releases on launch and every few hours, download in the background, and offer "Restart to update" from the `⌄` menu. Check manually from the About screen, or turn automatic checks off in Settings. macOS and portable builds link to the release page instead of installing.
 

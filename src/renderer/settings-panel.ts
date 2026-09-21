@@ -152,8 +152,10 @@ export class SettingsPanel {
     }
     this.syncFontSelect(settings.fontFamily);
     this.dimValue.textContent = `${settings.backdropDim}%`;
-    // Chattiness only paces popups, so it has nothing to do while they're off.
+    // Chattiness and popup style only apply to popups, so they have nothing to
+    // do while popups are off.
     this.field('edChattiness').disabled = !settings.edPopups;
+    this.field('edPopupStyle').disabled = !settings.edPopups;
   }
 
   // Runs on every open: the list itself is cached in fonts.ts, but a failed
