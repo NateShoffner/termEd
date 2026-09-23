@@ -54,12 +54,15 @@
     },
     "files": [
       "out/**/*",
-      "assets/ed-*.png",
+      "assets/ed-*.webp",
       "assets/icon.png",
       "assets/icon.ico"
     ],
     "asarUnpack": [
       "node_modules/@lydell/**"
+    ],
+    "electronLanguages": [
+      "en-US"
     ],
     "win": {
       "target": [

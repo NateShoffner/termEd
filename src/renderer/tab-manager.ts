@@ -14,7 +14,7 @@ export function createSession(): { session: HTMLDivElement; root: HTMLDivElement
     <div class="ed-backdrop"></div>
     <div class="pane-root"></div>
     <div class="ed-bubble hidden">
-      <img class="ed-avatar" src="../../assets/ed-1.png" alt="Ed" />
+      <img class="ed-avatar" src="../../assets/ed-1.webp" alt="Ed" />
       <div class="ed-bubble-content">
         <div class="ed-bubble-name">Ed</div>
         <div class="ed-bubble-text"></div>

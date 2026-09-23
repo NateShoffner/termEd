@@ -43,7 +43,7 @@ const TERMINAL_OPTIONS: ITerminalOptions = {
 };
 
 // Random pose each session; Ed switches poses when he speaks.
-const ED_PHOTOS = Array.from({ length: 10 }, (_, i) => `../../assets/ed-${i + 1}.png`);
+const ED_PHOTOS = Array.from({ length: 10 }, (_, i) => `../../assets/ed-${i + 1}.webp`);
 
 // Decode every pose up front so swaps never stutter.
 for (const photo of ED_PHOTOS) {
