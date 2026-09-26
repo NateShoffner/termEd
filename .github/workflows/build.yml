@@ -54,3 +54,5 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           files: artifacts/*
+          # Release notes from the commits since the last tag.
+          generate_release_notes: true
